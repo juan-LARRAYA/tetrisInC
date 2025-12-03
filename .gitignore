@@ -1,0 +1,7 @@
+# Ejecutable
+game
+
+# Archivos de compilación
+*.o
+*.out
+*.dSYM/
