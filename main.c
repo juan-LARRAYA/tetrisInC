@@ -47,6 +47,12 @@ int main(int argc, char *argv[])
     // Estructura para capturar eventos (clicks, teclas, etc.)
     SDL_Event event;
 
+    // Posición del cuadrado (x, y)
+    int playerX = 400; // centro horizontal (800/2)
+    int playerY = 300; // centro vertical (600/2)
+    int playerSize = 50; // tamaño del cuadrado en píxeles
+    int playerSpeed = 5; // píxeles por frame
+
     // GAME LOOP - El corazón de cualquier juego
     // Este loop se repite constantemente hasta que el usuario cierre la ventana
     while (running)
@@ -73,18 +79,56 @@ int main(int argc, char *argv[])
         }
 
         // 2. UPDATE (actualizar lógica del juego)
-        // Aquí irían cálculos, movimientos, física, etc.
-        // Por ahora no hacemos nada
+        // Leer el estado del teclado (qué teclas están presionadas AHORA)
+        const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+
+        // Mover el cuadrado con las flechas
+        if (keystate[SDL_SCANCODE_UP])
+        {
+            playerY -= playerSpeed; // mover arriba
+        }
+        if (keystate[SDL_SCANCODE_DOWN])
+        {
+            playerY += playerSpeed; // mover abajo
+        }
+        if (keystate[SDL_SCANCODE_LEFT])
+        {
+            playerX -= playerSpeed; // mover izquierda
+        }
+        if (keystate[SDL_SCANCODE_RIGHT])
+        {
+            playerX += playerSpeed; // mover derecha
+        }
+
+        // Limitar el cuadrado a los bordes de la ventana
+        if (playerX < 0)
+            playerX = 0;
+        if (playerY < 0)
+            playerY = 0;
+        if (playerX + playerSize > 800)
+            playerX = 800 - playerSize;
+        if (playerY + playerSize > 600)
+            playerY = 600 - playerSize;
 
         // 3. RENDER (dibujar en pantalla)
-        // Limpiar la pantalla con un color
-        // SDL_SetRenderDrawColor(renderer, R, G, B, A)
-        // R=Red, G=Green, B=Blue, A=Alpha (0-255 cada uno)
+        // Limpiar la pantalla con un color de fondo
         SDL_SetRenderDrawColor(renderer, 25, 25, 50, 255); // azul oscuro
-        SDL_RenderClear(renderer);                         // limpiar pantalla con ese color
+        SDL_RenderClear(renderer);
 
-        // Aquí dibujaríamos sprites, formas, texto, etc.
-        // Por ahora solo mostramos el color de fondo
+        // Dibujar el cuadrado del jugador
+        // SDL_Rect es una estructura que define un rectángulo (x, y, ancho, alto)
+        SDL_Rect player = {
+            playerX,      // posición X
+            playerY,      // posición Y
+            playerSize,   // ancho
+            playerSize    // alto
+        };
+
+        // Cambiar el color del pincel a verde brillante
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // verde (R=0, G=255, B=0)
+
+        // Dibujar el rectángulo relleno
+        SDL_RenderFillRect(renderer, &player);
 
         // Mostrar lo que dibujamos (swap buffers)
         SDL_RenderPresent(renderer);
