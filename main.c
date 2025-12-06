@@ -11,6 +11,128 @@
 #define WINDOW_WIDTH (GRID_WIDTH * CELL_SIZE)
 #define WINDOW_HEIGHT (GRID_HEIGHT * CELL_SIZE)
 
+// ============ TIPOS DE PIEZAS ============
+typedef enum
+{
+    PIECE_I = 0, // Barra
+    PIECE_O,     // Cuadrado
+    PIECE_T,     // T
+    PIECE_S,     // S
+    PIECE_Z,     // Z
+    PIECE_J,     // J
+    PIECE_L,     // L
+    NUM_PIECES   // Total de piezas (7)
+} PieceType;
+
+// ============ DEFINICIÓN DE LAS 7 PIEZAS ============
+// Cada pieza es una matriz 4×4
+const int PIECES[NUM_PIECES][4][4] = {
+    // I - Cyan
+    {
+        {0, 0, 0, 0},
+        {1, 1, 1, 1},
+        {0, 0, 0, 0},
+        {0, 0, 0, 0}},
+    // O - Amarillo
+    {
+        {0, 0, 0, 0},
+        {0, 1, 1, 0},
+        {0, 1, 1, 0},
+        {0, 0, 0, 0}},
+    // T - Morado
+    {
+        {0, 0, 0, 0},
+        {0, 1, 1, 1},
+        {0, 0, 1, 0},
+        {0, 0, 0, 0}},
+    // S - Verde
+    {
+        {0, 0, 0, 0},
+        {0, 0, 1, 1},
+        {0, 1, 1, 0},
+        {0, 0, 0, 0}},
+    // Z - Rojo
+    {
+        {0, 0, 0, 0},
+        {0, 1, 1, 0},
+        {0, 0, 1, 1},
+        {0, 0, 0, 0}},
+    // J - Azul
+    {
+        {0, 0, 0, 0},
+        {0, 1, 1, 1},
+        {0, 0, 0, 1},
+        {0, 0, 0, 0}},
+    // L - Naranja
+    {
+        {0, 0, 0, 0},
+        {0, 1, 1, 1},
+        {0, 1, 0, 0},
+        {0, 0, 0, 0}},
+};
+
+// Colores RGB para cada tipo de pieza
+const SDL_Color PIECE_COLORS[NUM_PIECES] = {
+    {0, 240, 240, 255},   // I - Cyan
+    {240, 240, 0, 255},   // O - Amarillo
+    {160, 0, 240, 255},   // T - Morado
+    {0, 240, 0, 255},     // S - Verde
+    {240, 0, 0, 255},     // Z - Rojo
+    {0, 0, 240, 255},     // J - Azul
+    {240, 160, 0, 255}    // L - Naranja
+};
+
+// ============ FUNCIONES DE COLISIÓN ============
+// Verifica si una pieza puede estar en una posición dada
+bool checkCollision(int grid[GRID_HEIGHT][GRID_WIDTH], int piece[4][4], int x, int y)
+{
+    for (int row = 0; row < 4; row++)
+    {
+        for (int col = 0; col < 4; col++)
+        {
+            if (piece[row][col] == 1)
+            {
+                int gridRow = y + row;
+                int gridCol = x + col;
+
+                // Verificar límites de la grilla
+                if (gridCol < 0 || gridCol >= GRID_WIDTH)
+                    return true; // Colisión con bordes laterales
+
+                if (gridRow >= GRID_HEIGHT)
+                    return true; // Colisión con el fondo
+
+                // Verificar colisión con piezas ya colocadas
+                if (gridRow >= 0 && grid[gridRow][gridCol] == 1)
+                    return true;
+            }
+        }
+    }
+    return false; // No hay colisión
+}
+
+// Fija la pieza actual en la grilla
+void lockPiece(int grid[GRID_HEIGHT][GRID_WIDTH], int piece[4][4], int x, int y)
+{
+    for (int row = 0; row < 4; row++)
+    {
+        for (int col = 0; col < 4; col++)
+        {
+            if (piece[row][col] == 1)
+            {
+                int gridRow = y + row;
+                int gridCol = x + col;
+
+                if (gridRow >= 0 && gridRow < GRID_HEIGHT &&
+                    gridCol >= 0 && gridCol < GRID_WIDTH)
+                {
+                    grid[gridRow][gridCol] = 1;
+                }
+            }
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
     // Inicializar SDL (sistema de video)
@@ -72,30 +194,24 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Para demo: llenar algunas celdas al azar (piezas ya caídas)
-    grid[19][0] = 1; // fila inferior, primera columna
-    grid[19][1] = 1;
-    grid[19][2] = 1;
-    grid[18][0] = 1; // segunda fila desde abajo
-    grid[18][1] = 1;
-
     // ============ PIEZA ACTUAL (la que está cayendo) ============
-    // Posición de la pieza en la grilla (coordenadas lógicas)
-    int pieceX = 4; // columna (centro de la grilla)
-    int pieceY = 0; // fila (arriba del todo)
+    int pieceX = 3;             // columna (empezar en el centro)
+    int pieceY = 0;             // fila (arriba del todo)
+    PieceType currentType = PIECE_T; // Tipo de pieza actual (empezamos con T)
 
-    // Forma de la pieza: cuadrado 2×2 (pieza O de Tetris)
-    // Representamos la pieza como un array 2D de 4×4 (máximo tamaño de pieza)
-    int piece[4][4] = {
-        {0, 0, 0, 0},
-        {0, 1, 1, 0},
-        {0, 1, 1, 0},
-        {0, 0, 0, 0}
-    };
+    // Copiar la forma de la pieza actual
+    int currentPiece[4][4];
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            currentPiece[i][j] = PIECES[currentType][i][j];
+        }
+    }
 
     // Timer para la caída automática
-    Uint32 lastFallTime = SDL_GetTicks(); // milisegundos actuales
-    Uint32 fallDelay = 500;                // caer cada 500ms (medio segundo)
+    Uint32 lastFallTime = SDL_GetTicks();
+    Uint32 fallDelay = 500; // caer cada 500ms
 
     // GAME LOOP - El corazón de cualquier juego
     // Este loop se repite constantemente hasta que el usuario cierre la ventana
@@ -131,45 +247,63 @@ int main(int argc, char *argv[])
         Uint32 currentTime = SDL_GetTicks();
         if (currentTime - lastFallTime >= fallDelay)
         {
-            // Ha pasado suficiente tiempo, hacer caer la pieza
-            pieceY++; // mover la pieza una fila hacia abajo
+            // Intentar mover la pieza hacia abajo
+            if (!checkCollision(grid, currentPiece, pieceX, pieceY + 1))
+            {
+                pieceY++; // mover hacia abajo si no hay colisión
+            }
+            else
+            {
+                // COLISIÓN: La pieza tocó el fondo o otra pieza
+                // Fijar la pieza en la grilla
+                lockPiece(grid, currentPiece, pieceX, pieceY);
+
+                // Crear nueva pieza arriba (por ahora, la misma)
+                pieceX = 3;
+                pieceY = 0;
+                // Copiar nueva pieza
+                for (int i = 0; i < 4; i++)
+                {
+                    for (int j = 0; j < 4; j++)
+                    {
+                        currentPiece[i][j] = PIECES[currentType][i][j];
+                    }
+                }
+            }
 
             // Reiniciar el timer
             lastFallTime = currentTime;
-
-            // TODO: detectar colisión con el fondo o con otras piezas
-            // Por ahora, si llega al fondo, reiniciar arriba
-            if (pieceY > GRID_HEIGHT - 3)
-            {
-                pieceY = 0; // volver arriba
-            }
         }
 
         // Control manual con flechas
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
         if (keystate[SDL_SCANCODE_LEFT])
         {
-            pieceX--; // mover izquierda
-            SDL_Delay(100); // pequeño delay para no mover muy rápido
+            // Intentar mover izquierda solo si no hay colisión
+            if (!checkCollision(grid, currentPiece, pieceX - 1, pieceY))
+            {
+                pieceX--;
+            }
+            SDL_Delay(100);
         }
         if (keystate[SDL_SCANCODE_RIGHT])
         {
-            pieceX++; // mover derecha
+            // Intentar mover derecha solo si no hay colisión
+            if (!checkCollision(grid, currentPiece, pieceX + 1, pieceY))
+            {
+                pieceX++;
+            }
             SDL_Delay(100);
         }
         if (keystate[SDL_SCANCODE_DOWN])
         {
-            pieceY++; // caída rápida
+            // Caída rápida
+            if (!checkCollision(grid, currentPiece, pieceX, pieceY + 1))
+            {
+                pieceY++;
+            }
             SDL_Delay(100);
         }
-
-        // Limitar la pieza a los bordes de la grilla
-        if (pieceX < 0)
-            pieceX = 0;
-        if (pieceX > GRID_WIDTH - 3)
-            pieceX = GRID_WIDTH - 3;
-        if (pieceY < 0)
-            pieceY = 0;
 
         // 3. RENDER (dibujar en pantalla)
         // Limpiar la pantalla con un color de fondo
@@ -201,12 +335,13 @@ int main(int argc, char *argv[])
         }
 
         // Dibujar la pieza actual (la que está cayendo)
+        SDL_Color color = PIECE_COLORS[currentType];
         for (int row = 0; row < 4; row++)
         {
             for (int col = 0; col < 4; col++)
             {
                 // Si esta celda de la pieza está ocupada
-                if (piece[row][col] == 1)
+                if (currentPiece[row][col] == 1)
                 {
                     // Calcular la posición en la grilla y en píxeles
                     int gridRow = pieceY + row;
@@ -222,8 +357,8 @@ int main(int argc, char *argv[])
                             CELL_SIZE - 1,
                             CELL_SIZE - 1};
 
-                        // Dibujar en color amarillo (pieza O)
-                        SDL_SetRenderDrawColor(renderer, 240, 240, 0, 255);
+                        // Dibujar con el color correspondiente a la pieza
+                        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
                         SDL_RenderFillRect(renderer, &cell);
                     }
                 }
