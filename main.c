@@ -1,6 +1,8 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h> // Para rand() y srand()
+#include <time.h>   // Para time()
 
 // ============ CONSTANTES DE TETRIS ============
 #define GRID_WIDTH 10   // Columnas del tablero
@@ -133,8 +135,77 @@ void lockPiece(int grid[GRID_HEIGHT][GRID_WIDTH], int piece[4][4], int x, int y)
     }
 }
 
+// Verifica si una fila está completa (todas las celdas ocupadas)
+bool isLineComplete(int grid[GRID_HEIGHT][GRID_WIDTH], int row)
+{
+    for (int col = 0; col < GRID_WIDTH; col++)
+    {
+        if (grid[row][col] == 0)
+            return false; // Hay una celda vacía
+    }
+    return true; // Todas las celdas están ocupadas
+}
+
+// Elimina una fila y hace caer las de arriba
+void clearLine(int grid[GRID_HEIGHT][GRID_WIDTH], int lineRow)
+{
+    // Mover todas las filas de arriba hacia abajo
+    for (int row = lineRow; row > 0; row--)
+    {
+        for (int col = 0; col < GRID_WIDTH; col++)
+        {
+            grid[row][col] = grid[row - 1][col];
+        }
+    }
+    // La fila superior queda vacía
+    for (int col = 0; col < GRID_WIDTH; col++)
+    {
+        grid[0][col] = 0;
+    }
+}
+
+// Verifica y elimina todas las líneas completas
+int clearCompleteLines(int grid[GRID_HEIGHT][GRID_WIDTH])
+{
+    int linesCleared = 0;
+
+    // Revisar de abajo hacia arriba
+    for (int row = GRID_HEIGHT - 1; row >= 0; row--)
+    {
+        if (isLineComplete(grid, row))
+        {
+            clearLine(grid, row);
+            linesCleared++;
+            row++; // Volver a revisar esta fila (porque ahora tiene contenido nuevo)
+        }
+    }
+
+    return linesCleared;
+}
+
+// Genera un tipo de pieza aleatorio
+PieceType getRandomPiece()
+{
+    return (PieceType)(rand() % NUM_PIECES);
+}
+
+// Copia una pieza del array PIECES a currentPiece
+void copyPiece(int dest[4][4], const int src[4][4])
+{
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            dest[i][j] = src[i][j];
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
+    // Inicializar generador de números aleatorios
+    srand(time(NULL));
+
     // Inicializar SDL (sistema de video)
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
@@ -197,21 +268,19 @@ int main(int argc, char *argv[])
     // ============ PIEZA ACTUAL (la que está cayendo) ============
     int pieceX = 3;             // columna (empezar en el centro)
     int pieceY = 0;             // fila (arriba del todo)
-    PieceType currentType = PIECE_T; // Tipo de pieza actual (empezamos con T)
+    PieceType currentType = getRandomPiece(); // Tipo de pieza actual (ALEATORIO!)
 
     // Copiar la forma de la pieza actual
     int currentPiece[4][4];
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            currentPiece[i][j] = PIECES[currentType][i][j];
-        }
-    }
+    copyPiece(currentPiece, PIECES[currentType]);
 
     // Timer para la caída automática
     Uint32 lastFallTime = SDL_GetTicks();
     Uint32 fallDelay = 500; // caer cada 500ms
+
+    // Puntuación
+    int score = 0;
+    int totalLinesCleared = 0;
 
     // GAME LOOP - El corazón de cualquier juego
     // Este loop se repite constantemente hasta que el usuario cierre la ventana
@@ -258,16 +327,30 @@ int main(int argc, char *argv[])
                 // Fijar la pieza en la grilla
                 lockPiece(grid, currentPiece, pieceX, pieceY);
 
-                // Crear nueva pieza arriba (por ahora, la misma)
+                // Verificar y eliminar líneas completas
+                int linesCleared = clearCompleteLines(grid);
+                if (linesCleared > 0)
+                {
+                    totalLinesCleared += linesCleared;
+                    // Sistema de puntuación: más líneas a la vez = más puntos
+                    score += linesCleared * linesCleared * 100;
+                    printf("¡%d línea(s) eliminada(s)! Puntos: +%d | Total: %d\n",
+                           linesCleared, linesCleared * linesCleared * 100, score);
+                }
+
+                // Crear nueva pieza arriba (ALEATORIA!)
                 pieceX = 3;
                 pieceY = 0;
-                // Copiar nueva pieza
-                for (int i = 0; i < 4; i++)
+                currentType = getRandomPiece();
+                copyPiece(currentPiece, PIECES[currentType]);
+
+                // Verificar Game Over
+                if (checkCollision(grid, currentPiece, pieceX, pieceY))
                 {
-                    for (int j = 0; j < 4; j++)
-                    {
-                        currentPiece[i][j] = PIECES[currentType][i][j];
-                    }
+                    printf("\n=== GAME OVER ===\n");
+                    printf("Puntuación final: %d\n", score);
+                    printf("Líneas eliminadas: %d\n", totalLinesCleared);
+                    running = false;
                 }
             }
 
