@@ -2,6 +2,15 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+// ============ CONSTANTES DE TETRIS ============
+#define GRID_WIDTH 10   // Columnas del tablero
+#define GRID_HEIGHT 20  // Filas del tablero
+#define CELL_SIZE 30    // Tamaño de cada celda en píxeles
+
+// Dimensiones de la ventana
+#define WINDOW_WIDTH (GRID_WIDTH * CELL_SIZE)
+#define WINDOW_HEIGHT (GRID_HEIGHT * CELL_SIZE)
+
 int main(int argc, char *argv[])
 {
     // Inicializar SDL (sistema de video)
@@ -10,13 +19,15 @@ int main(int argc, char *argv[])
         printf("Error al inicializar SDL: %s\n", SDL_GetError());
         return 1;
     }
+    printf("sistema de video iniciado con exito: \n");
 
     // Crear una ventana
     SDL_Window *window = SDL_CreateWindow(
-        "Mi Primera Ventana en C!",
+        "Tetris en C!",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
-        800, 600,
+        WINDOW_WIDTH,
+        WINDOW_HEIGHT,
         SDL_WINDOW_SHOWN);
 
     if (window == NULL)
@@ -30,7 +41,7 @@ int main(int argc, char *argv[])
     // El renderer es como un "pincel" para dibujar en la ventana
     SDL_Renderer *renderer = SDL_CreateRenderer(
         window,
-        -1, // usar el primer driver de renderizado disponible
+        -1,                        // usar el primer driver de renderizado disponible
         SDL_RENDERER_ACCELERATED); // usar aceleración por hardware (GPU)
 
     if (renderer == NULL)
@@ -47,11 +58,26 @@ int main(int argc, char *argv[])
     // Estructura para capturar eventos (clicks, teclas, etc.)
     SDL_Event event;
 
-    // Posición del cuadrado (x, y)
-    int playerX = 400; // centro horizontal (800/2)
-    int playerY = 300; // centro vertical (600/2)
-    int playerSize = 50; // tamaño del cuadrado en píxeles
-    int playerSpeed = 5; // píxeles por frame
+    // ============ GRILLA DE TETRIS ============
+    // Array 2D que representa el tablero de juego
+    // 0 = celda vacía, 1 = celda ocupada
+    int grid[GRID_HEIGHT][GRID_WIDTH];
+
+    // Inicializar la grilla vacía (todo en 0)
+    for (int row = 0; row < GRID_HEIGHT; row++)
+    {
+        for (int col = 0; col < GRID_WIDTH; col++)
+        {
+            grid[row][col] = 0;
+        }
+    }
+
+    // Para demo: llenar algunas celdas al azar
+    grid[19][0] = 1; // fila inferior, primera columna
+    grid[19][1] = 1;
+    grid[19][2] = 1;
+    grid[18][0] = 1; // segunda fila desde abajo
+    grid[18][1] = 1;
 
     // GAME LOOP - El corazón de cualquier juego
     // Este loop se repite constantemente hasta que el usuario cierre la ventana
@@ -61,6 +87,9 @@ int main(int argc, char *argv[])
         // SDL_PollEvent revisa si hay eventos pendientes (clicks, teclas, etc.)
         while (SDL_PollEvent(&event))
         {
+            // Imprimir información del evento para debug
+            // printf("Evento detectado - Tipo: %d\n", event.type);
+
             // Si el usuario hace click en la X de la ventana
             if (event.type == SDL_QUIT)
             {
@@ -79,56 +108,42 @@ int main(int argc, char *argv[])
         }
 
         // 2. UPDATE (actualizar lógica del juego)
-        // Leer el estado del teclado (qué teclas están presionadas AHORA)
-        const Uint8 *keystate = SDL_GetKeyboardState(NULL);
-
-        // Mover el cuadrado con las flechas
-        if (keystate[SDL_SCANCODE_UP])
-        {
-            playerY -= playerSpeed; // mover arriba
-        }
-        if (keystate[SDL_SCANCODE_DOWN])
-        {
-            playerY += playerSpeed; // mover abajo
-        }
-        if (keystate[SDL_SCANCODE_LEFT])
-        {
-            playerX -= playerSpeed; // mover izquierda
-        }
-        if (keystate[SDL_SCANCODE_RIGHT])
-        {
-            playerX += playerSpeed; // mover derecha
-        }
-
-        // Limitar el cuadrado a los bordes de la ventana
-        if (playerX < 0)
-            playerX = 0;
-        if (playerY < 0)
-            playerY = 0;
-        if (playerX + playerSize > 800)
-            playerX = 800 - playerSize;
-        if (playerY + playerSize > 600)
-            playerY = 600 - playerSize;
+        // Por ahora no hay lógica (solo mostramos la grilla)
 
         // 3. RENDER (dibujar en pantalla)
         // Limpiar la pantalla con un color de fondo
-        SDL_SetRenderDrawColor(renderer, 25, 25, 50, 255); // azul oscuro
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // negro
         SDL_RenderClear(renderer);
 
-        // Dibujar el cuadrado del jugador
-        // SDL_Rect es una estructura que define un rectángulo (x, y, ancho, alto)
-        SDL_Rect player = {
-            playerX,      // posición X
-            playerY,      // posición Y
-            playerSize,   // ancho
-            playerSize    // alto
-        };
+        // Dibujar la grilla de Tetris
+        // Recorrer cada celda del array 2D
+        for (int row = 0; row < GRID_HEIGHT; row++)
+        {
+            for (int col = 0; col < GRID_WIDTH; col++)
+            {
+                // Calcular la posición en píxeles de esta celda
+                SDL_Rect cell = {
+                    col * CELL_SIZE,      // X: columna × tamaño
+                    row * CELL_SIZE,      // Y: fila × tamaño
+                    CELL_SIZE - 1,        // ancho (- 1 para dejar espacio entre celdas)
+                    CELL_SIZE - 1         // alto
+                };
 
-        // Cambiar el color del pincel a verde brillante
-        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // verde (R=0, G=255, B=0)
-
-        // Dibujar el rectángulo relleno
-        SDL_RenderFillRect(renderer, &player);
+                // Si la celda está ocupada (grid[row][col] == 1)
+                if (grid[row][col] == 1)
+                {
+                    // Dibujar celda cyan (color de Tetris)
+                    SDL_SetRenderDrawColor(renderer, 0, 240, 240, 255);
+                    SDL_RenderFillRect(renderer, &cell);
+                }
+                else
+                {
+                    // Dibujar celda vacía (solo el borde)
+                    SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255); // gris muy oscuro
+                    SDL_RenderDrawRect(renderer, &cell);
+                }
+            }
+        }
 
         // Mostrar lo que dibujamos (swap buffers)
         SDL_RenderPresent(renderer);
