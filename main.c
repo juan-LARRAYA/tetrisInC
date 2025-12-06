@@ -72,12 +72,30 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Para demo: llenar algunas celdas al azar
+    // Para demo: llenar algunas celdas al azar (piezas ya caídas)
     grid[19][0] = 1; // fila inferior, primera columna
     grid[19][1] = 1;
     grid[19][2] = 1;
     grid[18][0] = 1; // segunda fila desde abajo
     grid[18][1] = 1;
+
+    // ============ PIEZA ACTUAL (la que está cayendo) ============
+    // Posición de la pieza en la grilla (coordenadas lógicas)
+    int pieceX = 4; // columna (centro de la grilla)
+    int pieceY = 0; // fila (arriba del todo)
+
+    // Forma de la pieza: cuadrado 2×2 (pieza O de Tetris)
+    // Representamos la pieza como un array 2D de 4×4 (máximo tamaño de pieza)
+    int piece[4][4] = {
+        {0, 0, 0, 0},
+        {0, 1, 1, 0},
+        {0, 1, 1, 0},
+        {0, 0, 0, 0}
+    };
+
+    // Timer para la caída automática
+    Uint32 lastFallTime = SDL_GetTicks(); // milisegundos actuales
+    Uint32 fallDelay = 500;                // caer cada 500ms (medio segundo)
 
     // GAME LOOP - El corazón de cualquier juego
     // Este loop se repite constantemente hasta que el usuario cierre la ventana
@@ -108,39 +126,106 @@ int main(int argc, char *argv[])
         }
 
         // 2. UPDATE (actualizar lógica del juego)
-        // Por ahora no hay lógica (solo mostramos la grilla)
+
+        // Caída automática de la pieza
+        Uint32 currentTime = SDL_GetTicks();
+        if (currentTime - lastFallTime >= fallDelay)
+        {
+            // Ha pasado suficiente tiempo, hacer caer la pieza
+            pieceY++; // mover la pieza una fila hacia abajo
+
+            // Reiniciar el timer
+            lastFallTime = currentTime;
+
+            // TODO: detectar colisión con el fondo o con otras piezas
+            // Por ahora, si llega al fondo, reiniciar arriba
+            if (pieceY > GRID_HEIGHT - 3)
+            {
+                pieceY = 0; // volver arriba
+            }
+        }
+
+        // Control manual con flechas
+        const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+        if (keystate[SDL_SCANCODE_LEFT])
+        {
+            pieceX--; // mover izquierda
+            SDL_Delay(100); // pequeño delay para no mover muy rápido
+        }
+        if (keystate[SDL_SCANCODE_RIGHT])
+        {
+            pieceX++; // mover derecha
+            SDL_Delay(100);
+        }
+        if (keystate[SDL_SCANCODE_DOWN])
+        {
+            pieceY++; // caída rápida
+            SDL_Delay(100);
+        }
+
+        // Limitar la pieza a los bordes de la grilla
+        if (pieceX < 0)
+            pieceX = 0;
+        if (pieceX > GRID_WIDTH - 3)
+            pieceX = GRID_WIDTH - 3;
+        if (pieceY < 0)
+            pieceY = 0;
 
         // 3. RENDER (dibujar en pantalla)
         // Limpiar la pantalla con un color de fondo
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // negro
         SDL_RenderClear(renderer);
 
-        // Dibujar la grilla de Tetris
-        // Recorrer cada celda del array 2D
+        // Dibujar la grilla de Tetris (piezas ya colocadas)
         for (int row = 0; row < GRID_HEIGHT; row++)
         {
             for (int col = 0; col < GRID_WIDTH; col++)
             {
-                // Calcular la posición en píxeles de esta celda
                 SDL_Rect cell = {
-                    col * CELL_SIZE,      // X: columna × tamaño
-                    row * CELL_SIZE,      // Y: fila × tamaño
-                    CELL_SIZE - 1,        // ancho (- 1 para dejar espacio entre celdas)
-                    CELL_SIZE - 1         // alto
-                };
+                    col * CELL_SIZE,
+                    row * CELL_SIZE,
+                    CELL_SIZE - 1,
+                    CELL_SIZE - 1};
 
-                // Si la celda está ocupada (grid[row][col] == 1)
                 if (grid[row][col] == 1)
                 {
-                    // Dibujar celda cyan (color de Tetris)
                     SDL_SetRenderDrawColor(renderer, 0, 240, 240, 255);
                     SDL_RenderFillRect(renderer, &cell);
                 }
                 else
                 {
-                    // Dibujar celda vacía (solo el borde)
-                    SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255); // gris muy oscuro
+                    SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
                     SDL_RenderDrawRect(renderer, &cell);
+                }
+            }
+        }
+
+        // Dibujar la pieza actual (la que está cayendo)
+        for (int row = 0; row < 4; row++)
+        {
+            for (int col = 0; col < 4; col++)
+            {
+                // Si esta celda de la pieza está ocupada
+                if (piece[row][col] == 1)
+                {
+                    // Calcular la posición en la grilla y en píxeles
+                    int gridRow = pieceY + row;
+                    int gridCol = pieceX + col;
+
+                    // Verificar que esté dentro de los límites
+                    if (gridRow >= 0 && gridRow < GRID_HEIGHT &&
+                        gridCol >= 0 && gridCol < GRID_WIDTH)
+                    {
+                        SDL_Rect cell = {
+                            gridCol * CELL_SIZE,
+                            gridRow * CELL_SIZE,
+                            CELL_SIZE - 1,
+                            CELL_SIZE - 1};
+
+                        // Dibujar en color amarillo (pieza O)
+                        SDL_SetRenderDrawColor(renderer, 240, 240, 0, 255);
+                        SDL_RenderFillRect(renderer, &cell);
+                    }
                 }
             }
         }
