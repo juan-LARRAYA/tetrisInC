@@ -1,9 +1,9 @@
 #include <SDL.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <stdlib.h> // Para rand() y srand()
-#include <time.h>   // Para time()
-#include <string.h> // Para strcspn()
+#include <stdlib.h>    // Para rand() y srand()
+#include <time.h>      // Para time()
+#include <string.h>    // Para strcspn()
 #include "constants.h" // Constantes del juego (piezas, colores, configuración)
 #include "database.h"  // Sistema de usuarios y puntajes
 #include "ui.h"        // Sistema de UI gráfica
@@ -190,104 +190,140 @@ bool rotatePieceWithKicks(int grid[GRID_HEIGHT][GRID_WIDTH],
 }
 
 // Menú principal con opciones: Jugar y Ver Top 10
-typedef enum {
+typedef enum
+{
     MAIN_MENU,
     TOP_SCORES_SCREEN,
     ENTER_NAME_SCREEN
 } MenuState;
 
 // Retorna: 0 = salir, 1 = jugar
-int showMainMenu(SDL_Window* window, SDL_Renderer* renderer, char* username) {
+int showMainMenu(SDL_Window *window, SDL_Renderer *renderer, char *username)
+{
     MenuState state = MAIN_MENU;
     bool running = true;
     int action = 0; // 0 = salir, 1 = jugar
 
-    // Campo de texto para nombre
-    TextField nameField = createTextField(50, 180, 200, 40, false);
+    // Campo de texto para nombre (centrado)
+    int centerX = WINDOW_WIDTH / 2;
+    TextField nameField = createTextField(centerX - 150, 180, 300, 40, false);
     nameField.isActive = false;
 
-    // Botones del menú principal
-    Button playButton = createButton(50, 200, 200, 50, "JUGAR");
-    Button topScoresButton = createButton(50, 260, 200, 50, "Top 10");
-    Button exitButton = createButton(50, 320, 200, 50, "Salir");
+    // Botones del menú principal (centrados)
+    Button playButton = createButton(centerX - 100, 200, 200, 50, "JUGAR");
+    Button topScoresButton = createButton(centerX - 100, 260, 200, 50, "Top 10");
+    Button exitButton = createButton(centerX - 100, 320, 200, 50, "Salir");
 
-    // Botones para pantalla de nombre
-    Button startButton = createButton(50, 240, 200, 50, "Comenzar");
-    Button backButton = createButton(50, 300, 200, 50, "Volver");
+    // Botones para pantalla de nombre (centrados)
+    Button startButton = createButton(centerX - 100, 280, 200, 50, "Comenzar");
+    Button backButton = createButton(centerX - 100, 340, 200, 50, "Volver");
 
     SDL_Event event;
 
-    while (running) {
+    while (running)
+    {
         // Procesar eventos
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
+        while (SDL_PollEvent(&event))
+        {
+            if (event.type == SDL_QUIT)
+            {
                 running = false;
                 action = 0;
             }
 
-            if (event.type == SDL_MOUSEBUTTONDOWN) {
+            if (event.type == SDL_MOUSEBUTTONDOWN)
+            {
                 int mouseX, mouseY;
                 SDL_GetMouseState(&mouseX, &mouseY);
 
-                if (state == MAIN_MENU) {
-                    if (isButtonClicked(&playButton, mouseX, mouseY)) {
+                if (state == MAIN_MENU)
+                {
+                    if (isButtonClicked(&playButton, mouseX, mouseY))
+                    {
                         state = ENTER_NAME_SCREEN;
                         nameField.isActive = true;
                         SDL_StartTextInput();
-                    } else if (isButtonClicked(&topScoresButton, mouseX, mouseY)) {
+                    }
+                    else if (isButtonClicked(&topScoresButton, mouseX, mouseY))
+                    {
                         state = TOP_SCORES_SCREEN;
-                    } else if (isButtonClicked(&exitButton, mouseX, mouseY)) {
+                    }
+                    else if (isButtonClicked(&exitButton, mouseX, mouseY))
+                    {
                         running = false;
                         action = 0;
                     }
-                } else if (state == ENTER_NAME_SCREEN) {
-                    nameField.isActive = isButtonClicked((Button*)&nameField, mouseX, mouseY);
+                }
+                else if (state == ENTER_NAME_SCREEN)
+                {
+                    nameField.isActive = isButtonClicked((Button *)&nameField, mouseX, mouseY);
 
-                    if (isButtonClicked(&startButton, mouseX, mouseY)) {
-                        if (strlen(nameField.text) > 0) {
+                    if (isButtonClicked(&startButton, mouseX, mouseY))
+                    {
+                        if (strlen(nameField.text) > 0)
+                        {
                             strcpy(username, nameField.text);
                             SDL_StopTextInput();
                             return 1; // Jugar
                         }
-                    } else if (isButtonClicked(&backButton, mouseX, mouseY)) {
+                    }
+                    else if (isButtonClicked(&backButton, mouseX, mouseY))
+                    {
                         state = MAIN_MENU;
                         nameField.text[0] = '\0';
                         SDL_StopTextInput();
                     }
-                } else if (state == TOP_SCORES_SCREEN) {
-                    if (isButtonClicked(&backButton, mouseX, mouseY)) {
+                }
+                else if (state == TOP_SCORES_SCREEN)
+                {
+                    if (isButtonClicked(&backButton, mouseX, mouseY))
+                    {
                         state = MAIN_MENU;
                     }
                 }
             }
 
             // Manejar input de teclado
-            if (state == ENTER_NAME_SCREEN) {
-                if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_RETURN) {
-                    if (strlen(nameField.text) > 0) {
+            if (state == ENTER_NAME_SCREEN)
+            {
+                if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_RETURN)
+                {
+                    if (strlen(nameField.text) > 0)
+                    {
                         strcpy(username, nameField.text);
                         SDL_StopTextInput();
                         return 1; // Jugar
                     }
-                } else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
+                }
+                else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
+                {
                     state = MAIN_MENU;
                     nameField.text[0] = '\0';
                     SDL_StopTextInput();
-                } else {
+                }
+                else
+                {
                     handleTextFieldInput(&nameField, &event);
                 }
-            } else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
-                if (state == TOP_SCORES_SCREEN) {
+            }
+            else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
+            {
+                if (state == TOP_SCORES_SCREEN)
+                {
                     state = MAIN_MENU;
                 }
             }
 
             // F11 para pantalla completa (funciona en cualquier estado)
-            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_F11) {
+            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_F11)
+            {
                 Uint32 flags = SDL_GetWindowFlags(window);
-                if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
+                if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP)
+                {
                     SDL_SetWindowFullscreen(window, 0);
-                } else {
+                }
+                else
+                {
                     SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
                 }
             }
@@ -295,14 +331,19 @@ int showMainMenu(SDL_Window* window, SDL_Renderer* renderer, char* username) {
             // Actualizar hover de botones
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
-            if (state == MAIN_MENU) {
+            if (state == MAIN_MENU)
+            {
                 updateButtonHover(&playButton, mouseX, mouseY);
                 updateButtonHover(&topScoresButton, mouseX, mouseY);
                 updateButtonHover(&exitButton, mouseX, mouseY);
-            } else if (state == ENTER_NAME_SCREEN) {
+            }
+            else if (state == ENTER_NAME_SCREEN)
+            {
                 updateButtonHover(&startButton, mouseX, mouseY);
                 updateButtonHover(&backButton, mouseX, mouseY);
-            } else if (state == TOP_SCORES_SCREEN) {
+            }
+            else if (state == TOP_SCORES_SCREEN)
+            {
                 updateButtonHover(&backButton, mouseX, mouseY);
             }
         }
@@ -315,31 +356,38 @@ int showMainMenu(SDL_Window* window, SDL_Renderer* renderer, char* username) {
         SDL_Color cyan = {0, 240, 240, 255};
         SDL_Color gray = {150, 150, 150, 255};
 
-        if (state == MAIN_MENU) {
+        if (state == MAIN_MENU)
+        {
             renderTextCentered(renderer, "TETRIS EN C", WINDOW_WIDTH / 2, 80, cyan);
             renderButton(renderer, &playButton);
             renderButton(renderer, &topScoresButton);
             renderButton(renderer, &exitButton);
-        } else if (state == ENTER_NAME_SCREEN) {
+        }
+        else if (state == ENTER_NAME_SCREEN)
+        {
             renderTextCentered(renderer, "INGRESA TU NOMBRE", WINDOW_WIDTH / 2, 80, white);
-            renderText(renderer, "Nombre:", 50, 150, white);
+            renderTextCentered(renderer, "Nombre:", WINDOW_WIDTH / 2, 150, white);
             renderTextField(renderer, &nameField);
             renderButton(renderer, &startButton);
             renderButton(renderer, &backButton);
-        } else if (state == TOP_SCORES_SCREEN) {
+        }
+        else if (state == TOP_SCORES_SCREEN)
+        {
             renderTextCentered(renderer, "TOP 10 PUNTAJES", WINDOW_WIDTH / 2, 30, cyan);
 
             Score scores[10];
             int count = getTopScores(scores, 10);
 
-            for (int i = 0; i < count && i < 8; i++) {
+            for (int i = 0; i < count && i < 8; i++)
+            {
                 char line[150];
                 snprintf(line, sizeof(line), "%d. %s - %d pts - %s",
                          i + 1, scores[i].username, scores[i].score, scores[i].date);
-                renderText(renderer, line, 15, 70 + i * 30, gray);
+                renderTextCentered(renderer, line, WINDOW_WIDTH / 2, 70 + i * 30, gray);
             }
 
-            backButton.rect.y = 500;
+            backButton.rect.y = 520;
+            backButton.rect.x = WINDOW_WIDTH / 2 - 100;
             renderButton(renderer, &backButton);
         }
 
@@ -351,32 +399,40 @@ int showMainMenu(SDL_Window* window, SDL_Renderer* renderer, char* username) {
 }
 
 // Menú de Game Over - vuelve al menú principal
-void showGameOverScreen(SDL_Renderer* renderer, const char* username, int score, int lines) {
+void showGameOverScreen(SDL_Renderer *renderer, const char *username, int score, int lines)
+{
     bool running = true;
 
     // Crear botón
-    Button menuButton = createButton(50, 400, 200, 50, "Menu Principal");
+    Button menuButton = createButton(WINDOW_WIDTH / 2 - 100, 400, 200, 50, "Menu Principal");
 
     SDL_Event event;
 
-    while (running) {
+    while (running)
+    {
         // Procesar eventos
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
+        while (SDL_PollEvent(&event))
+        {
+            if (event.type == SDL_QUIT)
+            {
                 running = false;
             }
 
-            if (event.type == SDL_MOUSEBUTTONDOWN) {
+            if (event.type == SDL_MOUSEBUTTONDOWN)
+            {
                 int mouseX, mouseY;
                 SDL_GetMouseState(&mouseX, &mouseY);
 
-                if (isButtonClicked(&menuButton, mouseX, mouseY)) {
+                if (isButtonClicked(&menuButton, mouseX, mouseY))
+                {
                     running = false;
                 }
             }
 
-            if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_ESCAPE) {
+            if (event.type == SDL_KEYDOWN)
+            {
+                if (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_ESCAPE)
+                {
                     running = false;
                 }
             }
@@ -428,7 +484,8 @@ int main(int argc, char *argv[])
     srand(time(NULL));
 
     // Inicializar base de datos
-    if (!initDatabase()) {
+    if (!initDatabase())
+    {
         printf("⚠️  Error al inicializar base de datos.\n");
         printf("   El juego continuará sin guardar puntajes.\n\n");
     }
@@ -442,7 +499,8 @@ int main(int argc, char *argv[])
     }
 
     // Inicializar SDL_ttf
-    if (!initUI()) {
+    if (!initUI())
+    {
         printf("Error al inicializar sistema de texto.\n");
         SDL_Quit();
         closeDatabase();
@@ -487,11 +545,13 @@ int main(int argc, char *argv[])
     bool running = true;
     char username[50];
 
-    while (running) {
+    while (running)
+    {
         // Mostrar menú principal y obtener acción
         int action = showMainMenu(window, renderer, username);
 
-        if (action == 0) {
+        if (action == 0)
+        {
             // Usuario eligió salir
             running = false;
             continue;
@@ -521,8 +581,8 @@ int main(int argc, char *argv[])
         }
 
         // ============ PIEZA ACTUAL (la que está cayendo) ============
-        int pieceX = SPAWN_X;       // columna (empezar en el centro)
-        int pieceY = SPAWN_Y;       // fila (arriba del todo)
+        int pieceX = SPAWN_X;                     // columna (empezar en el centro)
+        int pieceY = SPAWN_Y;                     // fila (arriba del todo)
         PieceType currentType = getRandomPiece(); // Tipo de pieza actual (ALEATORIO!)
 
         // Copiar la forma de la pieza actual
@@ -541,36 +601,15 @@ int main(int argc, char *argv[])
         // Este loop se repite constantemente hasta que el usuario cierre la ventana
         while (gameRunning)
         {
-        // 1. PROCESAR EVENTOS (input del usuario)
-        // SDL_PollEvent revisa si hay eventos pendientes (clicks, teclas, etc.)
-        while (SDL_PollEvent(&event))
-        {
-            // Imprimir información del evento para debug
-            // printf("Evento detectado - Tipo: %d\n", event.type);
-
-            // Si el usuario hace click en la X de la ventana
-            if (event.type == SDL_QUIT)
+            // 1. PROCESAR EVENTOS (input del usuario)
+            // SDL_PollEvent revisa si hay eventos pendientes (clicks, teclas, etc.)
+            while (SDL_PollEvent(&event))
             {
-                // Guardar el puntaje actual antes de salir
-                printf("\n=== PARTIDA GUARDADA ===\n");
-                printf("Usuario: %s\n", username);
-                printf("Puntuación: %d\n", score);
-                printf("Líneas eliminadas: %d\n", totalLinesCleared);
+                // Imprimir información del evento para debug
+                // printf("Evento detectado - Tipo: %d\n", event.type);
 
-                if (saveScore(username, score, totalLinesCleared)) {
-                    printf("¡Puntaje guardado exitosamente!\n");
-                }
-
-                printTopScores();
-                running = false; // Salir de la aplicación completa
-                gameRunning = false;
-            }
-
-            // Si el usuario presiona una tecla
-            if (event.type == SDL_KEYDOWN)
-            {
-                // Si presiona ESC, guardar y volver al menú
-                if (event.key.keysym.sym == SDLK_ESCAPE)
+                // Si el usuario hace click en la X de la ventana
+                if (event.type == SDL_QUIT)
                 {
                     // Guardar el puntaje actual antes de salir
                     printf("\n=== PARTIDA GUARDADA ===\n");
@@ -578,185 +617,212 @@ int main(int argc, char *argv[])
                     printf("Puntuación: %d\n", score);
                     printf("Líneas eliminadas: %d\n", totalLinesCleared);
 
-                    if (saveScore(username, score, totalLinesCleared)) {
+                    if (saveScore(username, score, totalLinesCleared))
+                    {
                         printf("¡Puntaje guardado exitosamente!\n");
                     }
 
                     printTopScores();
-                    gameRunning = false; // Volver al menú principal
+                    running = false; // Salir de la aplicación completa
+                    gameRunning = false;
                 }
-                // F11 para alternar pantalla completa
-                else if (event.key.keysym.sym == SDLK_F11)
+
+                // Si el usuario presiona una tecla
+                if (event.type == SDL_KEYDOWN)
                 {
-                    Uint32 flags = SDL_GetWindowFlags(window);
-                    if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
-                        SDL_SetWindowFullscreen(window, 0);
-                    } else {
-                        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                    // Si presiona ESC, guardar y volver al menú
+                    if (event.key.keysym.sym == SDLK_ESCAPE)
+                    {
+                        // Guardar el puntaje actual antes de salir
+                        printf("\n=== PARTIDA GUARDADA ===\n");
+                        printf("Usuario: %s\n", username);
+                        printf("Puntuación: %d\n", score);
+                        printf("Líneas eliminadas: %d\n", totalLinesCleared);
+
+                        if (saveScore(username, score, totalLinesCleared))
+                        {
+                            printf("¡Puntaje guardado exitosamente!\n");
+                        }
+
+                        printTopScores();
+                        gameRunning = false; // Volver al menú principal
+                    }
+                    // F11 para alternar pantalla completa
+                    else if (event.key.keysym.sym == SDLK_F11)
+                    {
+                        Uint32 flags = SDL_GetWindowFlags(window);
+                        if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP)
+                        {
+                            SDL_SetWindowFullscreen(window, 0);
+                        }
+                        else
+                        {
+                            SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                        }
                     }
                 }
             }
-        }
 
-        // 2. UPDATE (actualizar lógica del juego)
+            // 2. UPDATE (actualizar lógica del juego)
 
-        // Caída automática de la pieza
-        Uint32 currentTime = SDL_GetTicks();
-        if (currentTime - lastFallTime >= fallDelay)
-        {
-            // Intentar mover la pieza hacia abajo
-            if (!checkCollision(grid, currentPiece, pieceX, pieceY + 1))
+            // Caída automática de la pieza
+            Uint32 currentTime = SDL_GetTicks();
+            if (currentTime - lastFallTime >= fallDelay)
             {
-                pieceY++; // mover hacia abajo si no hay colisión
-            }
-            else
-            {
-                // COLISIÓN: La pieza tocó el fondo o otra pieza
-                // Fijar la pieza en la grilla
-                lockPiece(grid, currentPiece, pieceX, pieceY);
-
-                // Verificar y eliminar líneas completas
-                int linesCleared = clearCompleteLines(grid);
-                if (linesCleared > 0)
+                // Intentar mover la pieza hacia abajo
+                if (!checkCollision(grid, currentPiece, pieceX, pieceY + 1))
                 {
-                    totalLinesCleared += linesCleared;
-                    // Sistema de puntuación: más líneas a la vez = más puntos
-                    int points = linesCleared * linesCleared * POINTS_MULTIPLIER;
-                    score += points;
-                    printf("¡%d línea(s) eliminada(s)! Puntos: +%d | Total: %d\n",
-                           linesCleared, points, score);
-                }
-
-                // Crear nueva pieza arriba (ALEATORIA!)
-                pieceX = SPAWN_X;
-                pieceY = SPAWN_Y;
-                currentType = getRandomPiece();
-                copyPiece(currentPiece, PIECES[currentType]);
-
-                // Verificar Game Over
-                if (checkCollision(grid, currentPiece, pieceX, pieceY))
-                {
-                    printf("\n=== GAME OVER ===\n");
-                    printf("Usuario: %s\n", username);
-                    printf("Puntuación final: %d\n", score);
-                    printf("Líneas eliminadas: %d\n", totalLinesCleared);
-
-                    // Guardar puntaje en la base de datos
-                    if (saveScore(username, score, totalLinesCleared)) {
-                        printf("¡Puntaje guardado exitosamente!\n");
-                    }
-
-                    // Mostrar tabla de mejores puntajes
-                    printTopScores();
-
-                    // Mostrar pantalla de Game Over y volver al menú
-                    showGameOverScreen(renderer, username, score, totalLinesCleared);
-                    gameRunning = false; // Volver al menú principal
-                }
-            }
-
-            // Reiniciar el timer
-            lastFallTime = currentTime;
-        }
-
-        // Control manual con flechas
-        const Uint8 *keystate = SDL_GetKeyboardState(NULL);
-        if (keystate[SDL_SCANCODE_LEFT])
-        {
-            // Intentar mover izquierda solo si no hay colisión
-            if (!checkCollision(grid, currentPiece, pieceX - 1, pieceY))
-            {
-                pieceX--;
-            }
-            SDL_Delay(MOVE_DELAY);
-        }
-        if (keystate[SDL_SCANCODE_RIGHT])
-        {
-            // Intentar mover derecha solo si no hay colisión
-            if (!checkCollision(grid, currentPiece, pieceX + 1, pieceY))
-            {
-                pieceX++;
-            }
-            SDL_Delay(MOVE_DELAY);
-        }
-        if (keystate[SDL_SCANCODE_DOWN])
-        {
-            // Caída rápida
-            if (!checkCollision(grid, currentPiece, pieceX, pieceY + 1))
-            {
-                pieceY++;
-            }
-            SDL_Delay(MOVE_DELAY);
-        }
-        if (keystate[SDL_SCANCODE_UP])
-        {
-            // Rotar la pieza con wall kicks
-            // La función ajustará automáticamente la posición si es necesario
-            rotatePieceWithKicks(grid, currentPiece, &pieceX, &pieceY);
-            SDL_Delay(ROTATE_DELAY);
-        }
-
-        // 3. RENDER (dibujar en pantalla)
-        // Limpiar la pantalla con un color de fondo
-        SDL_SetRenderDrawColor(renderer, COLOR_BACKGROUND_R, COLOR_BACKGROUND_G, COLOR_BACKGROUND_B, COLOR_BACKGROUND_A);
-        SDL_RenderClear(renderer);
-
-        // Dibujar la grilla de Tetris (piezas ya colocadas)
-        for (int row = 0; row < GRID_HEIGHT; row++)
-        {
-            for (int col = 0; col < GRID_WIDTH; col++)
-            {
-                SDL_Rect cell = {
-                    BOARD_OFFSET_X + col * CELL_SIZE,
-                    BOARD_OFFSET_Y + row * CELL_SIZE,
-                    CELL_SIZE - 1,
-                    CELL_SIZE - 1};
-
-                if (grid[row][col] == 1)
-                {
-                    // Piezas fijadas (usar color cyan por ahora)
-                    SDL_SetRenderDrawColor(renderer, 0, 240, 240, 255);
-                    SDL_RenderFillRect(renderer, &cell);
+                    pieceY++; // mover hacia abajo si no hay colisión
                 }
                 else
                 {
-                    // Grilla vacía
-                    SDL_SetRenderDrawColor(renderer, COLOR_GRID_R, COLOR_GRID_G, COLOR_GRID_B, COLOR_GRID_A);
-                    SDL_RenderDrawRect(renderer, &cell);
-                }
-            }
-        }
+                    // COLISIÓN: La pieza tocó el fondo o otra pieza
+                    // Fijar la pieza en la grilla
+                    lockPiece(grid, currentPiece, pieceX, pieceY);
 
-        // Dibujar la pieza actual (la que está cayendo)
-        SDL_Color color = PIECE_COLORS[currentType];
-        for (int row = 0; row < 4; row++)
-        {
-            for (int col = 0; col < 4; col++)
-            {
-                // Si esta celda de la pieza está ocupada
-                if (currentPiece[row][col] == 1)
-                {
-                    // Calcular la posición en la grilla y en píxeles
-                    int gridRow = pieceY + row;
-                    int gridCol = pieceX + col;
-
-                    // Verificar que esté dentro de los límites
-                    if (gridRow >= 0 && gridRow < GRID_HEIGHT &&
-                        gridCol >= 0 && gridCol < GRID_WIDTH)
+                    // Verificar y eliminar líneas completas
+                    int linesCleared = clearCompleteLines(grid);
+                    if (linesCleared > 0)
                     {
-                        SDL_Rect cell = {
-                            BOARD_OFFSET_X + gridCol * CELL_SIZE,
-                            BOARD_OFFSET_Y + gridRow * CELL_SIZE,
-                            CELL_SIZE - 1,
-                            CELL_SIZE - 1};
+                        totalLinesCleared += linesCleared;
+                        // Sistema de puntuación: más líneas a la vez = más puntos
+                        int points = linesCleared * linesCleared * POINTS_MULTIPLIER;
+                        score += points;
+                        printf("¡%d línea(s) eliminada(s)! Puntos: +%d | Total: %d\n",
+                               linesCleared, points, score);
+                    }
 
-                        // Dibujar con el color correspondiente a la pieza
-                        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+                    // Crear nueva pieza arriba (ALEATORIA!)
+                    pieceX = SPAWN_X;
+                    pieceY = SPAWN_Y;
+                    currentType = getRandomPiece();
+                    copyPiece(currentPiece, PIECES[currentType]);
+
+                    // Verificar Game Over
+                    if (checkCollision(grid, currentPiece, pieceX, pieceY))
+                    {
+                        printf("\n=== GAME OVER ===\n");
+                        printf("Usuario: %s\n", username);
+                        printf("Puntuación final: %d\n", score);
+                        printf("Líneas eliminadas: %d\n", totalLinesCleared);
+
+                        // Guardar puntaje en la base de datos
+                        if (saveScore(username, score, totalLinesCleared))
+                        {
+                            printf("¡Puntaje guardado exitosamente!\n");
+                        }
+
+                        // Mostrar tabla de mejores puntajes
+                        printTopScores();
+
+                        // Mostrar pantalla de Game Over y volver al menú
+                        showGameOverScreen(renderer, username, score, totalLinesCleared);
+                        gameRunning = false; // Volver al menú principal
+                    }
+                }
+
+                // Reiniciar el timer
+                lastFallTime = currentTime;
+            }
+
+            // Control manual con flechas
+            const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+            if (keystate[SDL_SCANCODE_LEFT])
+            {
+                // Intentar mover izquierda solo si no hay colisión
+                if (!checkCollision(grid, currentPiece, pieceX - 1, pieceY))
+                {
+                    pieceX--;
+                }
+                SDL_Delay(MOVE_DELAY);
+            }
+            if (keystate[SDL_SCANCODE_RIGHT])
+            {
+                // Intentar mover derecha solo si no hay colisión
+                if (!checkCollision(grid, currentPiece, pieceX + 1, pieceY))
+                {
+                    pieceX++;
+                }
+                SDL_Delay(MOVE_DELAY);
+            }
+            if (keystate[SDL_SCANCODE_DOWN])
+            {
+                // Caída rápida
+                if (!checkCollision(grid, currentPiece, pieceX, pieceY + 1))
+                {
+                    pieceY++;
+                }
+                SDL_Delay(MOVE_DELAY);
+            }
+            if (keystate[SDL_SCANCODE_UP])
+            {
+                // Rotar la pieza con wall kicks
+                // La función ajustará automáticamente la posición si es necesario
+                rotatePieceWithKicks(grid, currentPiece, &pieceX, &pieceY);
+                SDL_Delay(ROTATE_DELAY);
+            }
+
+            // 3. RENDER (dibujar en pantalla)
+            // Limpiar la pantalla con un color de fondo
+            SDL_SetRenderDrawColor(renderer, COLOR_BACKGROUND_R, COLOR_BACKGROUND_G, COLOR_BACKGROUND_B, COLOR_BACKGROUND_A);
+            SDL_RenderClear(renderer);
+
+            // Dibujar la grilla de Tetris (piezas ya colocadas)
+            for (int row = 0; row < GRID_HEIGHT; row++)
+            {
+                for (int col = 0; col < GRID_WIDTH; col++)
+                {
+                    SDL_Rect cell = {
+                        BOARD_OFFSET_X + col * CELL_SIZE,
+                        BOARD_OFFSET_Y + row * CELL_SIZE,
+                        CELL_SIZE - 1,
+                        CELL_SIZE - 1};
+
+                    if (grid[row][col] == 1)
+                    {
+                        // Piezas fijadas (usar color cyan por ahora)
+                        SDL_SetRenderDrawColor(renderer, 0, 240, 240, 255);
                         SDL_RenderFillRect(renderer, &cell);
+                    }
+                    else
+                    {
+                        // Grilla vacía
+                        SDL_SetRenderDrawColor(renderer, COLOR_GRID_R, COLOR_GRID_G, COLOR_GRID_B, COLOR_GRID_A);
+                        SDL_RenderDrawRect(renderer, &cell);
                     }
                 }
             }
-        }
+
+            // Dibujar la pieza actual (la que está cayendo)
+            SDL_Color color = PIECE_COLORS[currentType];
+            for (int row = 0; row < 4; row++)
+            {
+                for (int col = 0; col < 4; col++)
+                {
+                    // Si esta celda de la pieza está ocupada
+                    if (currentPiece[row][col] == 1)
+                    {
+                        // Calcular la posición en la grilla y en píxeles
+                        int gridRow = pieceY + row;
+                        int gridCol = pieceX + col;
+
+                        // Verificar que esté dentro de los límites
+                        if (gridRow >= 0 && gridRow < GRID_HEIGHT &&
+                            gridCol >= 0 && gridCol < GRID_WIDTH)
+                        {
+                            SDL_Rect cell = {
+                                BOARD_OFFSET_X + gridCol * CELL_SIZE,
+                                BOARD_OFFSET_Y + gridRow * CELL_SIZE,
+                                CELL_SIZE - 1,
+                                CELL_SIZE - 1};
+
+                            // Dibujar con el color correspondiente a la pieza
+                            SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+                            SDL_RenderFillRect(renderer, &cell);
+                        }
+                    }
+                }
+            }
 
             // Mostrar lo que dibujamos (swap buffers)
             SDL_RenderPresent(renderer);
