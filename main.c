@@ -229,6 +229,54 @@ void rotatePiece(int piece[4][4])
     }
 }
 
+// Rota una pieza con wall kicks (ajustes de posición)
+// Devuelve true si se pudo rotar, false si no
+bool rotatePieceWithKicks(int grid[GRID_HEIGHT][GRID_WIDTH],
+                          int currentPiece[4][4],
+                          int *x, int *y)
+{
+    // 1. Crear una copia y rotarla
+    int rotated[4][4];
+    copyPiece(rotated, currentPiece);
+    rotatePiece(rotated);
+
+    // 2. Probar la rotación en la posición actual (sin kick)
+    if (!checkCollision(grid, rotated, *x, *y))
+    {
+        copyPiece(currentPiece, rotated);
+        return true;
+    }
+
+    // 3. Probar diferentes kicks (ajustes de posición)
+    // Orden de prioridad: izquierda, derecha, arriba, combinaciones
+    int kicks[][2] = {
+        {-1, 0},  // Kick izquierda
+        {1, 0},   // Kick derecha
+        {0, -1},  // Kick arriba
+        {-1, -1}, // Kick diagonal arriba-izquierda
+        {1, -1},  // Kick diagonal arriba-derecha
+        {-2, 0},  // Kick 2 posiciones a la izquierda (para pieza I)
+        {2, 0},   // Kick 2 posiciones a la derecha (para pieza I)
+    };
+
+    for (int i = 0; i < 7; i++)
+    {
+        int newX = *x + kicks[i][0];
+        int newY = *y + kicks[i][1];
+
+        if (!checkCollision(grid, rotated, newX, newY))
+        {
+            copyPiece(currentPiece, rotated);
+            *x = newX;
+            *y = newY;
+            return true;
+        }
+    }
+
+    // No se pudo rotar en ninguna posición
+    return false;
+}
+
 // Menú de login/registro en la terminal
 bool showLoginMenu(char* username) {
     printf("\n");
@@ -404,7 +452,7 @@ int main(int argc, char *argv[])
 
     // ============ PIEZA ACTUAL (la que está cayendo) ============
     int pieceX = 3;             // columna (empezar en el centro)
-    int pieceY = 0;             // fila (arriba del todo)
+    int pieceY = -1;            // fila (arriba del todo, -1 para compensar espacio vacío en matriz)
     PieceType currentType = getRandomPiece(); // Tipo de pieza actual (ALEATORIO!)
 
     // Copiar la forma de la pieza actual
@@ -499,7 +547,7 @@ int main(int argc, char *argv[])
 
                 // Crear nueva pieza arriba (ALEATORIA!)
                 pieceX = 3;
-                pieceY = 0;
+                pieceY = -1;  // Empezar en -1 para compensar espacio vacío en matriz
                 currentType = getRandomPiece();
                 copyPiece(currentPiece, PIECES[currentType]);
 
@@ -558,17 +606,9 @@ int main(int argc, char *argv[])
         }
         if (keystate[SDL_SCANCODE_UP])
         {
-            // Rotar la pieza
-            // Primero hacer una copia para probar la rotación
-            int rotatedPiece[4][4];
-            copyPiece(rotatedPiece, currentPiece);
-            rotatePiece(rotatedPiece);
-
-            // Solo aplicar la rotación si no hay colisión
-            if (!checkCollision(grid, rotatedPiece, pieceX, pieceY))
-            {
-                copyPiece(currentPiece, rotatedPiece);
-            }
+            // Rotar la pieza con wall kicks
+            // La función ajustará automáticamente la posición si es necesario
+            rotatePieceWithKicks(grid, currentPiece, &pieceX, &pieceY);
             SDL_Delay(150); // Delay un poco más largo para evitar rotaciones accidentales
         }
 
