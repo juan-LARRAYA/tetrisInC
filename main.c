@@ -4,87 +4,8 @@
 #include <stdlib.h> // Para rand() y srand()
 #include <time.h>   // Para time()
 #include <string.h> // Para strcspn()
-#include "database.h" // Para el sistema de usuarios y puntajes
-
-// ============ CONSTANTES DE TETRIS ============
-#define GRID_WIDTH 10   // Columnas del tablero
-#define GRID_HEIGHT 20  // Filas del tablero
-#define CELL_SIZE 30    // Tamaño de cada celda en píxeles
-
-// Dimensiones de la ventana
-#define WINDOW_WIDTH (GRID_WIDTH * CELL_SIZE)
-#define WINDOW_HEIGHT (GRID_HEIGHT * CELL_SIZE)
-
-// ============ TIPOS DE PIEZAS ============
-typedef enum
-{
-    PIECE_I = 0, // Barra
-    PIECE_O,     // Cuadrado
-    PIECE_T,     // T
-    PIECE_S,     // S
-    PIECE_Z,     // Z
-    PIECE_J,     // J
-    PIECE_L,     // L
-    NUM_PIECES   // Total de piezas (7)
-} PieceType;
-
-// ============ DEFINICIÓN DE LAS 7 PIEZAS ============
-// Cada pieza es una matriz 4×4
-const int PIECES[NUM_PIECES][4][4] = {
-    // I - Cyan
-    {
-        {0, 0, 0, 0},
-        {1, 1, 1, 1},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0}},
-    // O - Amarillo
-    {
-        {0, 0, 0, 0},
-        {0, 1, 1, 0},
-        {0, 1, 1, 0},
-        {0, 0, 0, 0}},
-    // T - Morado
-    {
-        {0, 0, 0, 0},
-        {0, 1, 1, 1},
-        {0, 0, 1, 0},
-        {0, 0, 0, 0}},
-    // S - Verde
-    {
-        {0, 0, 0, 0},
-        {0, 0, 1, 1},
-        {0, 1, 1, 0},
-        {0, 0, 0, 0}},
-    // Z - Rojo
-    {
-        {0, 0, 0, 0},
-        {0, 1, 1, 0},
-        {0, 0, 1, 1},
-        {0, 0, 0, 0}},
-    // J - Azul
-    {
-        {0, 0, 0, 0},
-        {0, 1, 1, 1},
-        {0, 0, 0, 1},
-        {0, 0, 0, 0}},
-    // L - Naranja
-    {
-        {0, 0, 0, 0},
-        {0, 1, 1, 1},
-        {0, 1, 0, 0},
-        {0, 0, 0, 0}},
-};
-
-// Colores RGB para cada tipo de pieza
-const SDL_Color PIECE_COLORS[NUM_PIECES] = {
-    {0, 240, 240, 255},   // I - Cyan
-    {240, 240, 0, 255},   // O - Amarillo
-    {160, 0, 240, 255},   // T - Morado
-    {0, 240, 0, 255},     // S - Verde
-    {240, 0, 0, 255},     // Z - Rojo
-    {0, 0, 240, 255},     // J - Azul
-    {240, 160, 0, 255}    // L - Naranja
-};
+#include "constants.h" // Constantes del juego (piezas, colores, configuración)
+#include "database.h"  // Sistema de usuarios y puntajes
 
 // ============ FUNCIONES DE COLISIÓN ============
 // Verifica si una pieza puede estar en una posición dada
@@ -249,20 +170,10 @@ bool rotatePieceWithKicks(int grid[GRID_HEIGHT][GRID_WIDTH],
 
     // 3. Probar diferentes kicks (ajustes de posición)
     // Orden de prioridad: izquierda, derecha, arriba, combinaciones
-    int kicks[][2] = {
-        {-1, 0},  // Kick izquierda
-        {1, 0},   // Kick derecha
-        {0, -1},  // Kick arriba
-        {-1, -1}, // Kick diagonal arriba-izquierda
-        {1, -1},  // Kick diagonal arriba-derecha
-        {-2, 0},  // Kick 2 posiciones a la izquierda (para pieza I)
-        {2, 0},   // Kick 2 posiciones a la derecha (para pieza I)
-    };
-
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < NUM_WALL_KICKS; i++)
     {
-        int newX = *x + kicks[i][0];
-        int newY = *y + kicks[i][1];
+        int newX = *x + WALL_KICKS[i][0];
+        int newY = *y + WALL_KICKS[i][1];
 
         if (!checkCollision(grid, rotated, newX, newY))
         {
@@ -451,8 +362,8 @@ int main(int argc, char *argv[])
     }
 
     // ============ PIEZA ACTUAL (la que está cayendo) ============
-    int pieceX = 3;             // columna (empezar en el centro)
-    int pieceY = -1;            // fila (arriba del todo, -1 para compensar espacio vacío en matriz)
+    int pieceX = SPAWN_X;       // columna (empezar en el centro)
+    int pieceY = SPAWN_Y;       // fila (arriba del todo)
     PieceType currentType = getRandomPiece(); // Tipo de pieza actual (ALEATORIO!)
 
     // Copiar la forma de la pieza actual
@@ -461,7 +372,7 @@ int main(int argc, char *argv[])
 
     // Timer para la caída automática
     Uint32 lastFallTime = SDL_GetTicks();
-    Uint32 fallDelay = 500; // caer cada 500ms
+    Uint32 fallDelay = FALL_DELAY; // Velocidad de caída
 
     // Puntuación
     int score = 0;
@@ -540,14 +451,15 @@ int main(int argc, char *argv[])
                 {
                     totalLinesCleared += linesCleared;
                     // Sistema de puntuación: más líneas a la vez = más puntos
-                    score += linesCleared * linesCleared * 100;
+                    int points = linesCleared * linesCleared * POINTS_MULTIPLIER;
+                    score += points;
                     printf("¡%d línea(s) eliminada(s)! Puntos: +%d | Total: %d\n",
-                           linesCleared, linesCleared * linesCleared * 100, score);
+                           linesCleared, points, score);
                 }
 
                 // Crear nueva pieza arriba (ALEATORIA!)
-                pieceX = 3;
-                pieceY = -1;  // Empezar en -1 para compensar espacio vacío en matriz
+                pieceX = SPAWN_X;
+                pieceY = SPAWN_Y;
                 currentType = getRandomPiece();
                 copyPiece(currentPiece, PIECES[currentType]);
 
@@ -584,7 +496,7 @@ int main(int argc, char *argv[])
             {
                 pieceX--;
             }
-            SDL_Delay(100);
+            SDL_Delay(MOVE_DELAY);
         }
         if (keystate[SDL_SCANCODE_RIGHT])
         {
@@ -593,7 +505,7 @@ int main(int argc, char *argv[])
             {
                 pieceX++;
             }
-            SDL_Delay(100);
+            SDL_Delay(MOVE_DELAY);
         }
         if (keystate[SDL_SCANCODE_DOWN])
         {
@@ -602,19 +514,19 @@ int main(int argc, char *argv[])
             {
                 pieceY++;
             }
-            SDL_Delay(100);
+            SDL_Delay(MOVE_DELAY);
         }
         if (keystate[SDL_SCANCODE_UP])
         {
             // Rotar la pieza con wall kicks
             // La función ajustará automáticamente la posición si es necesario
             rotatePieceWithKicks(grid, currentPiece, &pieceX, &pieceY);
-            SDL_Delay(150); // Delay un poco más largo para evitar rotaciones accidentales
+            SDL_Delay(ROTATE_DELAY);
         }
 
         // 3. RENDER (dibujar en pantalla)
         // Limpiar la pantalla con un color de fondo
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // negro
+        SDL_SetRenderDrawColor(renderer, COLOR_BACKGROUND_R, COLOR_BACKGROUND_G, COLOR_BACKGROUND_B, COLOR_BACKGROUND_A);
         SDL_RenderClear(renderer);
 
         // Dibujar la grilla de Tetris (piezas ya colocadas)
@@ -630,12 +542,14 @@ int main(int argc, char *argv[])
 
                 if (grid[row][col] == 1)
                 {
+                    // Piezas fijadas (usar color cyan por ahora)
                     SDL_SetRenderDrawColor(renderer, 0, 240, 240, 255);
                     SDL_RenderFillRect(renderer, &cell);
                 }
                 else
                 {
-                    SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
+                    // Grilla vacía
+                    SDL_SetRenderDrawColor(renderer, COLOR_GRID_R, COLOR_GRID_G, COLOR_GRID_B, COLOR_GRID_A);
                     SDL_RenderDrawRect(renderer, &cell);
                 }
             }
@@ -677,7 +591,7 @@ int main(int argc, char *argv[])
 
         // 4. CONTROL DE FPS
         // Esperar un poco para no consumir 100% del CPU
-        SDL_Delay(16); // ~60 FPS (1000ms/60 ≈ 16ms por frame)
+        SDL_Delay(FRAME_DELAY);
     }
 
     // Limpiar y cerrar
