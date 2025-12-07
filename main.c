@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <stdlib.h> // Para rand() y srand()
 #include <time.h>   // Para time()
+#include <string.h> // Para strcspn()
+#include "database.h" // Para el sistema de usuarios y puntajes
 
 // ============ CONSTANTES DE TETRIS ============
 #define GRID_WIDTH 10   // Columnas del tablero
@@ -201,18 +203,128 @@ void copyPiece(int dest[4][4], const int src[4][4])
     }
 }
 
+// Rota una pieza 90 grados en sentido horario
+// Algoritmo: transponer + invertir cada fila
+void rotatePiece(int piece[4][4])
+{
+    // Crear una copia temporal
+    int temp[4][4];
+
+    // Transponer la matriz (intercambiar filas por columnas)
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            temp[i][j] = piece[j][i];
+        }
+    }
+
+    // Invertir cada fila para completar la rotación
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            piece[i][j] = temp[i][4 - 1 - j];
+        }
+    }
+}
+
+// Menú de login/registro
+bool showLoginMenu(char* username) {
+    printf("\n========== TETRIS EN C ==========\n");
+    printf("1. Iniciar sesión\n");
+    printf("2. Registrar nuevo usuario\n");
+    printf("3. Ver top 10 puntajes\n");
+    printf("4. Salir\n");
+    printf("Selecciona una opción: ");
+
+    int option;
+    if (scanf("%d", &option) != 1) {
+        // Limpiar el buffer si la entrada no es válida
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF);
+        return false;
+    }
+
+    // Limpiar el buffer del newline
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+
+    char password[50];
+
+    switch (option) {
+        case 1: // Login
+            printf("Usuario: ");
+            if (fgets(username, 50, stdin) == NULL) return false;
+            username[strcspn(username, "\n")] = 0; // Remover newline
+
+            printf("Contraseña: ");
+            if (fgets(password, 50, stdin) == NULL) return false;
+            password[strcspn(password, "\n")] = 0;
+
+            if (loginUser(username, password)) {
+                printf("\n¡Bienvenido, %s!\n\n", username);
+                return true;
+            } else {
+                printf("\nCredenciales incorrectas.\n");
+                return false;
+            }
+
+        case 2: // Registro
+            printf("Nuevo usuario: ");
+            if (fgets(username, 50, stdin) == NULL) return false;
+            username[strcspn(username, "\n")] = 0;
+
+            printf("Contraseña: ");
+            if (fgets(password, 50, stdin) == NULL) return false;
+            password[strcspn(password, "\n")] = 0;
+
+            if (registerUser(username, password)) {
+                printf("\n¡Usuario '%s' registrado exitosamente!\n", username);
+                printf("Ahora puedes iniciar sesión.\n\n");
+            }
+            return false;
+
+        case 3: // Ver top scores
+            printTopScores();
+            return false;
+
+        case 4: // Salir
+            printf("¡Hasta luego!\n");
+            exit(0);
+
+        default:
+            printf("Opción inválida.\n");
+            return false;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     // Inicializar generador de números aleatorios
     srand(time(NULL));
 
+    // Inicializar base de datos
+    if (!initDatabase()) {
+        printf("Error al inicializar base de datos. El juego continuará sin guardar puntajes.\n");
+    }
+
+    // Menú de login/registro
+    char username[50];
+    bool loggedIn = false;
+
+    while (!loggedIn) {
+        loggedIn = showLoginMenu(username);
+    }
+
     // Inicializar SDL (sistema de video)
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         printf("Error al inicializar SDL: %s\n", SDL_GetError());
+        closeDatabase();
         return 1;
     }
-    printf("sistema de video iniciado con exito: \n");
+    printf("Sistema de video iniciado con éxito. ¡A jugar!\n");
 
     // Crear una ventana
     SDL_Window *window = SDL_CreateWindow(
@@ -348,8 +460,18 @@ int main(int argc, char *argv[])
                 if (checkCollision(grid, currentPiece, pieceX, pieceY))
                 {
                     printf("\n=== GAME OVER ===\n");
+                    printf("Usuario: %s\n", username);
                     printf("Puntuación final: %d\n", score);
                     printf("Líneas eliminadas: %d\n", totalLinesCleared);
+
+                    // Guardar puntaje en la base de datos
+                    if (saveScore(username, score, totalLinesCleared)) {
+                        printf("¡Puntaje guardado exitosamente!\n");
+                    }
+
+                    // Mostrar tabla de mejores puntajes
+                    printTopScores();
+
                     running = false;
                 }
             }
@@ -386,6 +508,21 @@ int main(int argc, char *argv[])
                 pieceY++;
             }
             SDL_Delay(100);
+        }
+        if (keystate[SDL_SCANCODE_UP])
+        {
+            // Rotar la pieza
+            // Primero hacer una copia para probar la rotación
+            int rotatedPiece[4][4];
+            copyPiece(rotatedPiece, currentPiece);
+            rotatePiece(rotatedPiece);
+
+            // Solo aplicar la rotación si no hay colisión
+            if (!checkCollision(grid, rotatedPiece, pieceX, pieceY))
+            {
+                copyPiece(currentPiece, rotatedPiece);
+            }
+            SDL_Delay(150); // Delay un poco más largo para evitar rotaciones accidentales
         }
 
         // 3. RENDER (dibujar en pantalla)
@@ -460,6 +597,7 @@ int main(int argc, char *argv[])
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+    closeDatabase();
 
     return 0;
 }

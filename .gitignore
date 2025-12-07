@@ -5,3 +5,6 @@ game
 *.o
 *.out
 *.dSYM/
+
+# Base de datos
+tetris.db
