@@ -189,228 +189,108 @@ bool rotatePieceWithKicks(int grid[GRID_HEIGHT][GRID_WIDTH],
     return false;
 }
 
-// Menú de login/registro en la terminal
-bool showLoginMenu(char* username) {
-    printf("\n");
-    printf("╔══════════════════════════════════════════════════╗\n");
-    printf("║           🎮  TETRIS EN C  🎮                   ║\n");
-    printf("╚══════════════════════════════════════════════════╝\n");
-    printf("\n");
-    printf("  1. 🔐 Iniciar sesión\n");
-    printf("  2. ✨ Registrar nuevo usuario\n");
-    printf("  3. 🏆 Ver top 10 puntajes\n");
-    printf("  4. 🚪 Salir\n");
-    printf("\n");
-    printf("Opción: ");
-    fflush(stdout);
-
-    int option;
-    if (scanf("%d", &option) != 1) {
-        // Limpiar el buffer si la entrada no es válida
-        int c;
-        while ((c = getchar()) != '\n' && c != EOF);
-        printf("❌ Entrada inválida. Intenta de nuevo.\n");
-        return false;
-    }
-
-    // Limpiar el buffer del newline
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF);
-
-    char password[50];
-
-    switch (option) {
-        case 1: // Login
-            printf("\n--- INICIAR SESIÓN ---\n");
-            printf("Usuario: ");
-            fflush(stdout);
-            if (fgets(username, 50, stdin) == NULL) return false;
-            username[strcspn(username, "\n")] = 0; // Remover newline
-
-            printf("Contraseña: ");
-            fflush(stdout);
-            if (fgets(password, 50, stdin) == NULL) return false;
-            password[strcspn(password, "\n")] = 0;
-
-            if (loginUser(username, password)) {
-                printf("\n✅ ¡Bienvenido, %s!\n", username);
-                printf("Preparando el juego...\n\n");
-                return true;
-            } else {
-                printf("\n❌ Credenciales incorrectas.\n");
-                return false;
-            }
-
-        case 2: // Registro
-            printf("\n--- REGISTRAR USUARIO ---\n");
-            printf("Nuevo usuario: ");
-            fflush(stdout);
-            if (fgets(username, 50, stdin) == NULL) return false;
-            username[strcspn(username, "\n")] = 0;
-
-            printf("Contraseña: ");
-            fflush(stdout);
-            if (fgets(password, 50, stdin) == NULL) return false;
-            password[strcspn(password, "\n")] = 0;
-
-            if (registerUser(username, password)) {
-                printf("\n✅ ¡Usuario '%s' registrado exitosamente!\n", username);
-                printf("Ahora puedes iniciar sesión (opción 1).\n");
-            }
-            return false;
-
-        case 3: // Ver top scores
-            printTopScores();
-            printf("Presiona ENTER para continuar...");
-            getchar();
-            return false;
-
-        case 4: // Salir
-            printf("\n👋 ¡Hasta luego!\n\n");
-            exit(0);
-
-        default:
-            printf("❌ Opción inválida.\n");
-            return false;
-    }
-}
-
-// Pantalla de login gráfica con SDL2
+// Menú principal con opciones: Jugar y Ver Top 10
 typedef enum {
-    LOGIN_SCREEN,
-    REGISTER_SCREEN,
-    TOP_SCORES_SCREEN
-} LoginState;
+    MAIN_MENU,
+    TOP_SCORES_SCREEN,
+    ENTER_NAME_SCREEN
+} MenuState;
 
-bool showGraphicalLogin(SDL_Window* window, SDL_Renderer* renderer, char* username) {
-    LoginState state = LOGIN_SCREEN;
+// Retorna: 0 = salir, 1 = jugar
+int showMainMenu(SDL_Renderer* renderer, char* username) {
+    MenuState state = MAIN_MENU;
     bool running = true;
-    bool loggedIn = false;
+    int action = 0; // 0 = salir, 1 = jugar
 
-    // Crear campos de texto
-    TextField usernameField = createTextField(50, 150, 200, 40, false);
-    TextField passwordField = createTextField(50, 220, 200, 40, true);
-    usernameField.isActive = true;
+    // Campo de texto para nombre
+    TextField nameField = createTextField(50, 180, 200, 40, false);
+    nameField.isActive = false;
 
-    // Crear botones
-    Button loginButton = createButton(50, 290, 95, 40, "Entrar");
-    Button registerButton = createButton(155, 290, 95, 40, "Registro");
-    Button topScoresButton = createButton(50, 340, 200, 40, "Top 10");
-    Button backButton = createButton(50, 390, 200, 40, "Volver");
-    Button submitButton = createButton(50, 290, 200, 40, "Confirmar");
+    // Botones del menú principal
+    Button playButton = createButton(50, 200, 200, 50, "JUGAR");
+    Button topScoresButton = createButton(50, 260, 200, 50, "Top 10");
+    Button exitButton = createButton(50, 320, 200, 50, "Salir");
+
+    // Botones para pantalla de nombre
+    Button startButton = createButton(50, 240, 200, 50, "Comenzar");
+    Button backButton = createButton(50, 300, 200, 50, "Volver");
 
     SDL_Event event;
 
-    // Habilitar entrada de texto
-    SDL_StartTextInput();
-
-    while (running && !loggedIn) {
+    while (running) {
         // Procesar eventos
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
-                SDL_StopTextInput();
-                return false;
+                action = 0;
             }
 
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 int mouseX, mouseY;
                 SDL_GetMouseState(&mouseX, &mouseY);
 
-                // Activar/desactivar campos de texto
-                if (state == LOGIN_SCREEN || state == REGISTER_SCREEN) {
-                    usernameField.isActive = isButtonClicked((Button*)&usernameField, mouseX, mouseY);
-                    passwordField.isActive = isButtonClicked((Button*)&passwordField, mouseX, mouseY);
-                }
-
-                // Botones según el estado
-                if (state == LOGIN_SCREEN) {
-                    if (isButtonClicked(&loginButton, mouseX, mouseY)) {
-                        // Intentar login
-                        if (strlen(usernameField.text) > 0 && strlen(passwordField.text) > 0) {
-                            if (loginUser(usernameField.text, passwordField.text)) {
-                                strcpy(username, usernameField.text);
-                                loggedIn = true;
-                            } else {
-                                printf("❌ Credenciales incorrectas\n");
-                                passwordField.text[0] = '\0';
-                            }
-                        }
-                    } else if (isButtonClicked(&registerButton, mouseX, mouseY)) {
-                        state = REGISTER_SCREEN;
-                        usernameField.text[0] = '\0';
-                        passwordField.text[0] = '\0';
-                        usernameField.isActive = true;
-                        passwordField.isActive = false;
+                if (state == MAIN_MENU) {
+                    if (isButtonClicked(&playButton, mouseX, mouseY)) {
+                        state = ENTER_NAME_SCREEN;
+                        nameField.isActive = true;
+                        SDL_StartTextInput();
                     } else if (isButtonClicked(&topScoresButton, mouseX, mouseY)) {
                         state = TOP_SCORES_SCREEN;
+                    } else if (isButtonClicked(&exitButton, mouseX, mouseY)) {
+                        running = false;
+                        action = 0;
                     }
-                } else if (state == REGISTER_SCREEN) {
-                    if (isButtonClicked(&submitButton, mouseX, mouseY)) {
-                        if (strlen(usernameField.text) > 0 && strlen(passwordField.text) > 0) {
-                            if (registerUser(usernameField.text, passwordField.text)) {
-                                printf("✅ Usuario registrado: %s\n", usernameField.text);
-                                state = LOGIN_SCREEN;
-                                passwordField.text[0] = '\0';
-                            } else {
-                                printf("❌ Error al registrar usuario\n");
-                            }
+                } else if (state == ENTER_NAME_SCREEN) {
+                    nameField.isActive = isButtonClicked((Button*)&nameField, mouseX, mouseY);
+
+                    if (isButtonClicked(&startButton, mouseX, mouseY)) {
+                        if (strlen(nameField.text) > 0) {
+                            strcpy(username, nameField.text);
+                            SDL_StopTextInput();
+                            return 1; // Jugar
                         }
                     } else if (isButtonClicked(&backButton, mouseX, mouseY)) {
-                        state = LOGIN_SCREEN;
-                        usernameField.text[0] = '\0';
-                        passwordField.text[0] = '\0';
+                        state = MAIN_MENU;
+                        nameField.text[0] = '\0';
+                        SDL_StopTextInput();
                     }
                 } else if (state == TOP_SCORES_SCREEN) {
                     if (isButtonClicked(&backButton, mouseX, mouseY)) {
-                        state = LOGIN_SCREEN;
+                        state = MAIN_MENU;
                     }
                 }
             }
 
             // Manejar input de teclado
-            if (state == LOGIN_SCREEN || state == REGISTER_SCREEN) {
-                if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_TAB) {
-                    // Cambiar entre campos con TAB
-                    bool temp = usernameField.isActive;
-                    usernameField.isActive = passwordField.isActive;
-                    passwordField.isActive = temp;
-                } else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_RETURN) {
-                    // Enter para submit
-                    if (state == LOGIN_SCREEN) {
-                        if (strlen(usernameField.text) > 0 && strlen(passwordField.text) > 0) {
-                            if (loginUser(usernameField.text, passwordField.text)) {
-                                strcpy(username, usernameField.text);
-                                loggedIn = true;
-                            } else {
-                                printf("❌ Credenciales incorrectas\n");
-                                passwordField.text[0] = '\0';
-                            }
-                        }
-                    } else if (state == REGISTER_SCREEN) {
-                        if (strlen(usernameField.text) > 0 && strlen(passwordField.text) > 0) {
-                            if (registerUser(usernameField.text, passwordField.text)) {
-                                printf("✅ Usuario registrado: %s\n", usernameField.text);
-                                state = LOGIN_SCREEN;
-                                passwordField.text[0] = '\0';
-                            }
-                        }
+            if (state == ENTER_NAME_SCREEN) {
+                if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_RETURN) {
+                    if (strlen(nameField.text) > 0) {
+                        strcpy(username, nameField.text);
+                        SDL_StopTextInput();
+                        return 1; // Jugar
                     }
+                } else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
+                    state = MAIN_MENU;
+                    nameField.text[0] = '\0';
+                    SDL_StopTextInput();
                 } else {
-                    handleTextFieldInput(&usernameField, &event);
-                    handleTextFieldInput(&passwordField, &event);
+                    handleTextFieldInput(&nameField, &event);
+                }
+            } else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
+                if (state == TOP_SCORES_SCREEN) {
+                    state = MAIN_MENU;
                 }
             }
 
             // Actualizar hover de botones
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
-            if (state == LOGIN_SCREEN) {
-                updateButtonHover(&loginButton, mouseX, mouseY);
-                updateButtonHover(&registerButton, mouseX, mouseY);
+            if (state == MAIN_MENU) {
+                updateButtonHover(&playButton, mouseX, mouseY);
                 updateButtonHover(&topScoresButton, mouseX, mouseY);
-            } else if (state == REGISTER_SCREEN) {
-                updateButtonHover(&submitButton, mouseX, mouseY);
+                updateButtonHover(&exitButton, mouseX, mouseY);
+            } else if (state == ENTER_NAME_SCREEN) {
+                updateButtonHover(&startButton, mouseX, mouseY);
                 updateButtonHover(&backButton, mouseX, mouseY);
             } else if (state == TOP_SCORES_SCREEN) {
                 updateButtonHover(&backButton, mouseX, mouseY);
@@ -422,37 +302,34 @@ bool showGraphicalLogin(SDL_Window* window, SDL_Renderer* renderer, char* userna
         SDL_RenderClear(renderer);
 
         SDL_Color white = {255, 255, 255, 255};
+        SDL_Color cyan = {0, 240, 240, 255};
         SDL_Color gray = {150, 150, 150, 255};
 
-        if (state == LOGIN_SCREEN) {
-            renderTextCentered(renderer, "TETRIS EN C", WINDOW_WIDTH / 2, 50, white);
-            renderText(renderer, "Usuario:", 50, 130, white);
-            renderTextField(renderer, &usernameField);
-            renderText(renderer, "Password:", 50, 200, white);
-            renderTextField(renderer, &passwordField);
-            renderButton(renderer, &loginButton);
-            renderButton(renderer, &registerButton);
+        if (state == MAIN_MENU) {
+            renderTextCentered(renderer, "TETRIS EN C", WINDOW_WIDTH / 2, 80, cyan);
+            renderButton(renderer, &playButton);
             renderButton(renderer, &topScoresButton);
-        } else if (state == REGISTER_SCREEN) {
-            renderTextCentered(renderer, "REGISTRAR USUARIO", WINDOW_WIDTH / 2, 50, white);
-            renderText(renderer, "Nuevo usuario:", 50, 130, white);
-            renderTextField(renderer, &usernameField);
-            renderText(renderer, "Password:", 50, 200, white);
-            renderTextField(renderer, &passwordField);
-            renderButton(renderer, &submitButton);
+            renderButton(renderer, &exitButton);
+        } else if (state == ENTER_NAME_SCREEN) {
+            renderTextCentered(renderer, "INGRESA TU NOMBRE", WINDOW_WIDTH / 2, 80, white);
+            renderText(renderer, "Nombre:", 50, 150, white);
+            renderTextField(renderer, &nameField);
+            renderButton(renderer, &startButton);
             renderButton(renderer, &backButton);
         } else if (state == TOP_SCORES_SCREEN) {
-            renderTextCentered(renderer, "TOP 10 PUNTAJES", WINDOW_WIDTH / 2, 30, white);
+            renderTextCentered(renderer, "TOP 10 PUNTAJES", WINDOW_WIDTH / 2, 30, cyan);
 
             Score scores[10];
             int count = getTopScores(scores, 10);
 
-            for (int i = 0; i < count; i++) {
-                char line[100];
-                snprintf(line, sizeof(line), "%d. %s - %d pts", i + 1, scores[i].username, scores[i].score);
-                renderText(renderer, line, 30, 70 + i * 30, gray);
+            for (int i = 0; i < count && i < 8; i++) {
+                char line[150];
+                snprintf(line, sizeof(line), "%d. %s - %d pts - %s",
+                         i + 1, scores[i].username, scores[i].score, scores[i].date);
+                renderText(renderer, line, 15, 70 + i * 30, gray);
             }
 
+            backButton.rect.y = 500;
             renderButton(renderer, &backButton);
         }
 
@@ -460,18 +337,15 @@ bool showGraphicalLogin(SDL_Window* window, SDL_Renderer* renderer, char* userna
         SDL_Delay(16); // ~60 FPS
     }
 
-    SDL_StopTextInput();
-    return loggedIn;
+    return action;
 }
 
-// Menú de "Jugar de nuevo" después de Game Over
-bool showPlayAgainMenu(SDL_Renderer* renderer, const char* username, int score, int lines) {
+// Menú de Game Over - vuelve al menú principal
+void showGameOverScreen(SDL_Renderer* renderer, const char* username, int score, int lines) {
     bool running = true;
-    bool playAgain = false;
 
-    // Crear botones
-    Button playAgainButton = createButton(50, 350, 200, 50, "Jugar de nuevo");
-    Button exitButton = createButton(50, 410, 200, 50, "Salir");
+    // Crear botón
+    Button menuButton = createButton(50, 400, 200, 50, "Menu Principal");
 
     SDL_Event event;
 
@@ -480,28 +354,19 @@ bool showPlayAgainMenu(SDL_Renderer* renderer, const char* username, int score, 
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
-                playAgain = false;
             }
 
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 int mouseX, mouseY;
                 SDL_GetMouseState(&mouseX, &mouseY);
 
-                if (isButtonClicked(&playAgainButton, mouseX, mouseY)) {
-                    playAgain = true;
-                    running = false;
-                } else if (isButtonClicked(&exitButton, mouseX, mouseY)) {
-                    playAgain = false;
+                if (isButtonClicked(&menuButton, mouseX, mouseY)) {
                     running = false;
                 }
             }
 
             if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.sym == SDLK_RETURN) {
-                    playAgain = true;
-                    running = false;
-                } else if (event.key.keysym.sym == SDLK_ESCAPE) {
-                    playAgain = false;
+                if (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_ESCAPE) {
                     running = false;
                 }
             }
@@ -509,8 +374,7 @@ bool showPlayAgainMenu(SDL_Renderer* renderer, const char* username, int score, 
             // Actualizar hover
             int mouseX, mouseY;
             SDL_GetMouseState(&mouseX, &mouseY);
-            updateButtonHover(&playAgainButton, mouseX, mouseY);
-            updateButtonHover(&exitButton, mouseX, mouseY);
+            updateButtonHover(&menuButton, mouseX, mouseY);
         }
 
         // Renderizar
@@ -538,18 +402,14 @@ bool showPlayAgainMenu(SDL_Renderer* renderer, const char* username, int score, 
         renderTextCentered(renderer, linesText, WINDOW_WIDTH / 2, 230, white);
 
         // Indicaciones
-        renderTextCentered(renderer, "ENTER = Jugar", WINDOW_WIDTH / 2, 280, gray);
-        renderTextCentered(renderer, "ESC = Salir", WINDOW_WIDTH / 2, 310, gray);
+        renderTextCentered(renderer, "Presiona ENTER o ESC", WINDOW_WIDTH / 2, 340, gray);
 
-        // Botones
-        renderButton(renderer, &playAgainButton);
-        renderButton(renderer, &exitButton);
+        // Botón
+        renderButton(renderer, &menuButton);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16); // ~60 FPS
     }
-
-    return playAgain;
 }
 
 int main(int argc, char *argv[])
@@ -581,7 +441,7 @@ int main(int argc, char *argv[])
 
     // Crear una ventana
     SDL_Window *window = SDL_CreateWindow(
-        "Tetris en C - Login",
+        "Tetris en C",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH,
@@ -613,29 +473,25 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Menú de login gráfico
+    // Loop principal: menú -> juego -> game over -> menú
+    bool running = true;
     char username[50];
-    bool loggedIn = showGraphicalLogin(window, renderer, username);
 
-    if (!loggedIn) {
-        // Usuario cerró la ventana sin hacer login
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        closeUI();
-        SDL_Quit();
-        closeDatabase();
-        return 0;
-    }
+    while (running) {
+        // Mostrar menú principal y obtener acción
+        int action = showMainMenu(renderer, username);
 
-    printf("✅ Login exitoso: %s\n", username);
-    SDL_SetWindowTitle(window, "Tetris en C!");
+        if (action == 0) {
+            // Usuario eligió salir
+            running = false;
+            continue;
+        }
 
-    // Loop principal: permite jugar múltiples partidas
-    bool playAgain = true;
+        // Usuario eligió jugar (action == 1)
+        printf("✅ Jugador: %s\n", username);
 
-    while (playAgain) {
         // Variable para controlar el loop del juego
-        bool running = true;
+        bool gameRunning = true;
 
         // Estructura para capturar eventos (clicks, teclas, etc.)
         SDL_Event event;
@@ -671,10 +527,10 @@ int main(int argc, char *argv[])
         int score = 0;
         int totalLinesCleared = 0;
 
-    // GAME LOOP - El corazón de cualquier juego
-    // Este loop se repite constantemente hasta que el usuario cierre la ventana
-    while (running)
-    {
+        // GAME LOOP - El corazón de cualquier juego
+        // Este loop se repite constantemente hasta que el usuario cierre la ventana
+        while (gameRunning)
+        {
         // 1. PROCESAR EVENTOS (input del usuario)
         // SDL_PollEvent revisa si hay eventos pendientes (clicks, teclas, etc.)
         while (SDL_PollEvent(&event))
@@ -696,14 +552,14 @@ int main(int argc, char *argv[])
                 }
 
                 printTopScores();
-                running = false;
-                playAgain = false; // Usuario cerró, no preguntar si quiere jugar de nuevo
+                running = false; // Salir de la aplicación completa
+                gameRunning = false;
             }
 
             // Si el usuario presiona una tecla
             if (event.type == SDL_KEYDOWN)
             {
-                // Si presiona ESC, guardar y cerrar
+                // Si presiona ESC, guardar y volver al menú
                 if (event.key.keysym.sym == SDLK_ESCAPE)
                 {
                     // Guardar el puntaje actual antes de salir
@@ -717,8 +573,7 @@ int main(int argc, char *argv[])
                     }
 
                     printTopScores();
-                    running = false;
-                    playAgain = false; // Usuario presionó ESC, no preguntar si quiere jugar de nuevo
+                    gameRunning = false; // Volver al menú principal
                 }
             }
         }
@@ -774,9 +629,9 @@ int main(int argc, char *argv[])
                     // Mostrar tabla de mejores puntajes
                     printTopScores();
 
-                    // Mostrar menú de "jugar de nuevo"
-                    playAgain = showPlayAgainMenu(renderer, username, score, totalLinesCleared);
-                    running = false;
+                    // Mostrar pantalla de Game Over y volver al menú
+                    showGameOverScreen(renderer, username, score, totalLinesCleared);
+                    gameRunning = false; // Volver al menú principal
                 }
             }
 
@@ -883,15 +738,15 @@ int main(int argc, char *argv[])
             }
         }
 
-        // Mostrar lo que dibujamos (swap buffers)
-        SDL_RenderPresent(renderer);
+            // Mostrar lo que dibujamos (swap buffers)
+            SDL_RenderPresent(renderer);
 
-        // 4. CONTROL DE FPS
-        // Esperar un poco para no consumir 100% del CPU
-        SDL_Delay(FRAME_DELAY);
-    }
+            // 4. CONTROL DE FPS
+            // Esperar un poco para no consumir 100% del CPU
+            SDL_Delay(FRAME_DELAY);
+        }
 
-    } // Fin del while(playAgain)
+    } // Fin del while(running) - menú principal
 
     // Limpiar y cerrar
     SDL_DestroyRenderer(renderer);

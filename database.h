@@ -16,8 +16,6 @@ typedef struct {
 // Funciones de base de datos
 bool initDatabase();
 void closeDatabase();
-bool registerUser(const char* username, const char* password);
-bool loginUser(const char* username, const char* password);
 bool saveScore(const char* username, int score, int lines);
 int getTopScores(Score* scores, int maxScores);
 void printTopScores();
