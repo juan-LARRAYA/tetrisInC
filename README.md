@@ -33,23 +33,31 @@ make
 
 ## Cómo jugar
 
-1. Ejecutar el juego:
+1. Ejecutar el juego **desde la terminal**:
 ```bash
 ./game
 ```
 
-2. **Menú principal:**
-   - Opción 1: Iniciar sesión (con usuario existente)
-   - Opción 2: Registrar nuevo usuario
-   - Opción 3: Ver top 10 puntajes
-   - Opción 4: Salir
+2. **Menú principal (en terminal):**
+   - 🔐 Opción 1: Iniciar sesión (con usuario existente)
+   - ✨ Opción 2: Registrar nuevo usuario
+   - 🏆 Opción 3: Ver top 10 puntajes
+   - 🚪 Opción 4: Salir
 
-3. **Controles del juego:**
+3. **Después del login:**
+   - Se abrirá la ventana del juego SDL2
+   - Juega con las flechas del teclado
+
+4. **Controles del juego:**
    - **← Flecha Izquierda**: Mover pieza a la izquierda
    - **→ Flecha Derecha**: Mover pieza a la derecha
    - **↓ Flecha Abajo**: Caída rápida
    - **↑ Flecha Arriba**: Rotar pieza 90° en sentido horario
-   - **ESC**: Salir del juego
+   - **ESC o cerrar ventana**: Guardar puntaje y salir
+
+5. **Importante:**
+   - ⚠️ Al presionar ESC o cerrar la ventana, tu puntaje se guarda automáticamente
+   - No necesitas esperar a perder para guardar tu progreso
 
 ## Sistema de puntuación
 

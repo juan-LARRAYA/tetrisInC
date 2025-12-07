@@ -229,20 +229,27 @@ void rotatePiece(int piece[4][4])
     }
 }
 
-// Menú de login/registro
+// Menú de login/registro en la terminal
 bool showLoginMenu(char* username) {
-    printf("\n========== TETRIS EN C ==========\n");
-    printf("1. Iniciar sesión\n");
-    printf("2. Registrar nuevo usuario\n");
-    printf("3. Ver top 10 puntajes\n");
-    printf("4. Salir\n");
-    printf("Selecciona una opción: ");
+    printf("\n");
+    printf("╔══════════════════════════════════════════════════╗\n");
+    printf("║           🎮  TETRIS EN C  🎮                   ║\n");
+    printf("╚══════════════════════════════════════════════════╝\n");
+    printf("\n");
+    printf("  1. 🔐 Iniciar sesión\n");
+    printf("  2. ✨ Registrar nuevo usuario\n");
+    printf("  3. 🏆 Ver top 10 puntajes\n");
+    printf("  4. 🚪 Salir\n");
+    printf("\n");
+    printf("Opción: ");
+    fflush(stdout);
 
     int option;
     if (scanf("%d", &option) != 1) {
         // Limpiar el buffer si la entrada no es válida
         int c;
         while ((c = getchar()) != '\n' && c != EOF);
+        printf("❌ Entrada inválida. Intenta de nuevo.\n");
         return false;
     }
 
@@ -254,47 +261,56 @@ bool showLoginMenu(char* username) {
 
     switch (option) {
         case 1: // Login
+            printf("\n--- INICIAR SESIÓN ---\n");
             printf("Usuario: ");
+            fflush(stdout);
             if (fgets(username, 50, stdin) == NULL) return false;
             username[strcspn(username, "\n")] = 0; // Remover newline
 
             printf("Contraseña: ");
+            fflush(stdout);
             if (fgets(password, 50, stdin) == NULL) return false;
             password[strcspn(password, "\n")] = 0;
 
             if (loginUser(username, password)) {
-                printf("\n¡Bienvenido, %s!\n\n", username);
+                printf("\n✅ ¡Bienvenido, %s!\n", username);
+                printf("Preparando el juego...\n\n");
                 return true;
             } else {
-                printf("\nCredenciales incorrectas.\n");
+                printf("\n❌ Credenciales incorrectas.\n");
                 return false;
             }
 
         case 2: // Registro
+            printf("\n--- REGISTRAR USUARIO ---\n");
             printf("Nuevo usuario: ");
+            fflush(stdout);
             if (fgets(username, 50, stdin) == NULL) return false;
             username[strcspn(username, "\n")] = 0;
 
             printf("Contraseña: ");
+            fflush(stdout);
             if (fgets(password, 50, stdin) == NULL) return false;
             password[strcspn(password, "\n")] = 0;
 
             if (registerUser(username, password)) {
-                printf("\n¡Usuario '%s' registrado exitosamente!\n", username);
-                printf("Ahora puedes iniciar sesión.\n\n");
+                printf("\n✅ ¡Usuario '%s' registrado exitosamente!\n", username);
+                printf("Ahora puedes iniciar sesión (opción 1).\n");
             }
             return false;
 
         case 3: // Ver top scores
             printTopScores();
+            printf("Presiona ENTER para continuar...");
+            getchar();
             return false;
 
         case 4: // Salir
-            printf("¡Hasta luego!\n");
+            printf("\n👋 ¡Hasta luego!\n\n");
             exit(0);
 
         default:
-            printf("Opción inválida.\n");
+            printf("❌ Opción inválida.\n");
             return false;
     }
 }
@@ -304,9 +320,18 @@ int main(int argc, char *argv[])
     // Inicializar generador de números aleatorios
     srand(time(NULL));
 
+    // Mensaje de bienvenida
+    printf("\033[2J\033[H"); // Limpiar pantalla
+    printf("════════════════════════════════════════════════════════\n");
+    printf("    🎮  BIENVENIDO A TETRIS EN C  🎮\n");
+    printf("════════════════════════════════════════════════════════\n");
+    printf("\n💡 TIP: Interactúa con este menú en la terminal\n");
+    printf("   La ventana del juego se abrirá después del login.\n\n");
+
     // Inicializar base de datos
     if (!initDatabase()) {
-        printf("Error al inicializar base de datos. El juego continuará sin guardar puntajes.\n");
+        printf("⚠️  Error al inicializar base de datos.\n");
+        printf("   El juego continuará sin guardar puntajes.\n\n");
     }
 
     // Menú de login/registro
@@ -408,15 +433,37 @@ int main(int argc, char *argv[])
             // Si el usuario hace click en la X de la ventana
             if (event.type == SDL_QUIT)
             {
+                // Guardar el puntaje actual antes de salir
+                printf("\n=== PARTIDA GUARDADA ===\n");
+                printf("Usuario: %s\n", username);
+                printf("Puntuación: %d\n", score);
+                printf("Líneas eliminadas: %d\n", totalLinesCleared);
+
+                if (saveScore(username, score, totalLinesCleared)) {
+                    printf("¡Puntaje guardado exitosamente!\n");
+                }
+
+                printTopScores();
                 running = false; // salir del loop
             }
 
             // Si el usuario presiona una tecla
             if (event.type == SDL_KEYDOWN)
             {
-                // Si presiona ESC, también cerramos
+                // Si presiona ESC, guardar y cerrar
                 if (event.key.keysym.sym == SDLK_ESCAPE)
                 {
+                    // Guardar el puntaje actual antes de salir
+                    printf("\n=== PARTIDA GUARDADA ===\n");
+                    printf("Usuario: %s\n", username);
+                    printf("Puntuación: %d\n", score);
+                    printf("Líneas eliminadas: %d\n", totalLinesCleared);
+
+                    if (saveScore(username, score, totalLinesCleared)) {
+                        printf("¡Puntaje guardado exitosamente!\n");
+                    }
+
+                    printTopScores();
                     running = false;
                 }
             }
