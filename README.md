@@ -1,130 +1,84 @@
 # Tetris en C
 
-Un juego de Tetris completo implementado en C con SDL2 y SQLite.
+Tetris implementado en C, utilizando la librería SDL2 para los gráficos y SQLite para la persistencia de datos.
+
+## Vistazo del Juego
+
+![Preview del juego 1](utils/1.png)
+![Preview del juego 2](utils/2.png)
 
 ## Características
 
-- **Juego completo de Tetris** con las 7 piezas clásicas
-- **Sistema de rotación** de piezas
-- **Sistema de colisiones** preciso
-- **Eliminación de líneas** y puntuación
-- **Sistema de usuarios** con login y registro
-- **Base de datos SQLite** para guardar puntajes persistentes
-- **Tabla de high scores** (top 10 mejores puntajes)
+- Juego completo de Tetris con las 7 piezas clásicas.
+- Sistema de rotación de piezas y Wall Kicks (basado en SRS).
+- Sistema de colisiones, eliminación de líneas y puntuación.
+- Tabla de high scores para ver los 10 mejores puntajes.
+- Base de datos SQLite para guardar puntajes de forma persistente.
 
-## Requisitos
+## Requisitos e Instalación
 
-- macOS (probado en macOS con Homebrew)
-- SDL2
-- SQLite3
-- gcc
+Primero, asegúrate de tener las herramientas de compilación básicas (`gcc`, `make`) y luego instala las dependencias según tu sistema operativo.
 
-## Instalación
-
-1. Instalar dependencias con Homebrew:
+#### Para Linux (distribuciones basadas en Debian/Ubuntu):
 ```bash
-brew install sdl2 sqlite
+sudo apt-get update
+sudo apt-get install -y build-essential libsdl2-dev libsqlite3-dev
 ```
 
-2. Compilar el juego:
+#### Para macOS (usando Homebrew):
 ```bash
-make
+brew install sdl2 sqlite3
 ```
 
-## Cómo jugar
-
-1. Ejecutar el juego **desde la terminal**:
+#### Para Windows (usando MSYS2/MinGW):
+Se recomienda instalar [MSYS2](https://www.msys2.org/) y luego, desde su terminal, instalar las dependencias necesarias:
 ```bash
-./game
+pacman -Syu
+pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-sdl2 mingw-w64-x86_64-sqlite3 make
 ```
 
-2. **Menú principal (en terminal):**
-   - 🔐 Opción 1: Iniciar sesión (con usuario existente)
-   - ✨ Opción 2: Registrar nuevo usuario
-   - 🏆 Opción 3: Ver top 10 puntajes
-   - 🚪 Opción 4: Salir
+## Ejecución
 
-3. **Después del login:**
-   - Se abrirá la ventana del juego SDL2
-   - Juega con las flechas del teclado
+Una vez instaladas las dependencias, el siguiente comando se encargará de compilar y ejecutar el proyecto de forma automática:
 
-4. **Controles del juego:**
-   - **← Flecha Izquierda**: Mover pieza a la izquierda
-   - **→ Flecha Derecha**: Mover pieza a la derecha
-   - **↓ Flecha Abajo**: Caída rápida
-   - **↑ Flecha Arriba**: Rotar pieza 90° en sentido horario
-   - **ESC o cerrar ventana**: Guardar puntaje y salir
+```bash
+make clean && make all && make run
+```
 
-5. **Importante:**
-   - ⚠️ Al presionar ESC o cerrar la ventana, tu puntaje se guarda automáticamente
-   - No necesitas esperar a perder para guardar tu progreso
+## Controles del juego
+
+- **← Flecha Izquierda**: Mover la pieza hacia la izquierda.
+- **→ Flecha Derecha**: Mover la pieza hacia la derecha.
+- **↓ Flecha Abajo**: Acelerar la caída de la pieza (Soft Drop).
+- **↑ Flecha Arriba**: Rotar la pieza 90° en sentido horario.
+- **ESC o cerrar ventana**: Salir del juego.
+
+**Importante**: Al presionar `ESC` o cerrar la ventana, tu puntaje se guardará automáticamente en la base de datos antes de que el programa finalice.
 
 ## Sistema de puntuación
 
 - 1 línea = 100 puntos
-- 2 líneas = 400 puntos (2² × 100)
-- 3 líneas = 900 puntos (3² × 100)
-- 4 líneas = 1600 puntos (4² × 100)
+- 2 líneas = 400 puntos
+- 3 líneas = 900 puntos
+- 4 líneas (Tetris) = 1600 puntos
 
 ## Base de datos
 
-El juego crea automáticamente un archivo `tetris.db` que contiene:
-
-- **Tabla users**: Almacena usuarios con username y password
-- **Tabla scores**: Almacena puntajes con fecha, líneas eliminadas y username
-
-Los puntajes se guardan automáticamente al terminar cada partida y se muestran los top 10 mejores puntajes.
-
-## Estructura del proyecto
-
-```
-.
-├── main.c          # Lógica principal del juego
-├── database.h      # Header del sistema de base de datos
-├── database.c      # Implementación de la base de datos
-├── Makefile        # Archivo de compilación
-├── tetris.db       # Base de datos SQLite (generada automáticamente)
-└── README.md       # Este archivo
-```
+El juego crea y gestiona automáticamente un archivo `tetris.db` en el directorio principal. Este archivo contiene:
+- **Tabla `users`**: Almacena los nombres de usuario y contraseñas.
+- **Tabla `scores`**: Almacena los puntajes, las líneas eliminadas y la fecha de cada partida, asociado a un usuario.
 
 ## Compilación manual
 
-Si quieres compilar manualmente sin usar el Makefile:
+Si prefieres compilar el proyecto manualmente, puedes usar un comando similar al siguiente (ajusta las rutas si es necesario):
 
 ```bash
-gcc -Wall \
-  -I/opt/homebrew/opt/sdl2/include \
-  -I/opt/homebrew/opt/sqlite/include \
-  main.c database.c \
-  -o game \
-  -L/opt/homebrew/opt/sdl2/lib -lSDL2 \
-  -L/opt/homebrew/opt/sqlite/lib -lsqlite3
+gcc -Wall main.c ui.c database.c -o game $(sdl2-config --cflags --libs) -lsqlite3
 ```
+*Nota: En algunos sistemas, como macOS con Homebrew, puede que necesites especificar las rutas manualmente si `sdl2-config` no está en el PATH.*
 
-## Comandos útiles
+## Autor y Contacto
 
-- `make`: Compilar el juego
-- `make clean`: Limpiar archivos compilados
-- `make run`: Compilar y ejecutar
+Este proyecto fue creado por **Juan Cruz Larraya**.
 
-## Game Over
-
-Cuando el juego termina:
-1. Se guarda automáticamente tu puntaje en la base de datos
-2. Se muestra tu puntuación final y líneas eliminadas
-3. Se muestra la tabla de top 10 puntajes
-4. La ventana se cierra
-
-## Notas de seguridad
-
-**IMPORTANTE**: Este es un proyecto educativo. Las contraseñas se almacenan en **texto plano** en la base de datos.
-
-Para un proyecto de producción, deberías:
-- Usar hashing de contraseñas (bcrypt, argon2, etc.)
-- Agregar salt a las contraseñas
-- Implementar límites de intentos de login
-- Validar inputs del usuario
-
-## Autor
-
-Desarrollado como proyecto de aprendizaje de C, SDL2 y SQLite.
+Si deseas contribuir, reportar un error o simplemente ponerte en contacto, puedes escribirme a: **juanlarraya00@gmail.com**
