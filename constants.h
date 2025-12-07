@@ -8,9 +8,13 @@
 #define GRID_HEIGHT 20  // Filas del tablero
 #define CELL_SIZE 30    // Tamaño de cada celda en píxeles
 
-// Dimensiones de la ventana (calculadas automáticamente)
-#define WINDOW_WIDTH (GRID_WIDTH * CELL_SIZE)
-#define WINDOW_HEIGHT (GRID_HEIGHT * CELL_SIZE)
+// Dimensiones de la ventana (más grande que el tablero para UI)
+#define WINDOW_WIDTH 800   // Ventana más ancha para menús y UI
+#define WINDOW_HEIGHT 700  // Ventana más alta para texto
+
+// Offset para centrar el tablero en la ventana
+#define BOARD_OFFSET_X ((WINDOW_WIDTH - (GRID_WIDTH * CELL_SIZE)) / 2)
+#define BOARD_OFFSET_Y 50  // Espacio arriba para título/info
 
 // ============ CONFIGURACIÓN DEL JUEGO ============
 #define FALL_DELAY 500       // Velocidad de caída (ms entre cada caída)

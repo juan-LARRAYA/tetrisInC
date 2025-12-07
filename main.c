@@ -197,7 +197,7 @@ typedef enum {
 } MenuState;
 
 // Retorna: 0 = salir, 1 = jugar
-int showMainMenu(SDL_Renderer* renderer, char* username) {
+int showMainMenu(SDL_Window* window, SDL_Renderer* renderer, char* username) {
     MenuState state = MAIN_MENU;
     bool running = true;
     int action = 0; // 0 = salir, 1 = jugar
@@ -279,6 +279,16 @@ int showMainMenu(SDL_Renderer* renderer, char* username) {
             } else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
                 if (state == TOP_SCORES_SCREEN) {
                     state = MAIN_MENU;
+                }
+            }
+
+            // F11 para pantalla completa (funciona en cualquier estado)
+            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_F11) {
+                Uint32 flags = SDL_GetWindowFlags(window);
+                if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
+                    SDL_SetWindowFullscreen(window, 0);
+                } else {
+                    SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
                 }
             }
 
@@ -439,14 +449,14 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Crear una ventana
+    // Crear una ventana con soporte para pantalla completa
     SDL_Window *window = SDL_CreateWindow(
         "Tetris en C",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH,
         WINDOW_HEIGHT,
-        SDL_WINDOW_SHOWN);
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
     if (window == NULL)
     {
@@ -479,7 +489,7 @@ int main(int argc, char *argv[])
 
     while (running) {
         // Mostrar menú principal y obtener acción
-        int action = showMainMenu(renderer, username);
+        int action = showMainMenu(window, renderer, username);
 
         if (action == 0) {
             // Usuario eligió salir
@@ -574,6 +584,16 @@ int main(int argc, char *argv[])
 
                     printTopScores();
                     gameRunning = false; // Volver al menú principal
+                }
+                // F11 para alternar pantalla completa
+                else if (event.key.keysym.sym == SDLK_F11)
+                {
+                    Uint32 flags = SDL_GetWindowFlags(window);
+                    if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
+                        SDL_SetWindowFullscreen(window, 0);
+                    } else {
+                        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                    }
                 }
             }
         }
@@ -687,8 +707,8 @@ int main(int argc, char *argv[])
             for (int col = 0; col < GRID_WIDTH; col++)
             {
                 SDL_Rect cell = {
-                    col * CELL_SIZE,
-                    row * CELL_SIZE,
+                    BOARD_OFFSET_X + col * CELL_SIZE,
+                    BOARD_OFFSET_Y + row * CELL_SIZE,
                     CELL_SIZE - 1,
                     CELL_SIZE - 1};
 
@@ -725,8 +745,8 @@ int main(int argc, char *argv[])
                         gridCol >= 0 && gridCol < GRID_WIDTH)
                     {
                         SDL_Rect cell = {
-                            gridCol * CELL_SIZE,
-                            gridRow * CELL_SIZE,
+                            BOARD_OFFSET_X + gridCol * CELL_SIZE,
+                            BOARD_OFFSET_Y + gridRow * CELL_SIZE,
                             CELL_SIZE - 1,
                             CELL_SIZE - 1};
 
