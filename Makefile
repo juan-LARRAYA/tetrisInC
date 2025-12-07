@@ -1,13 +1,13 @@
 # Configuración del compilador
 CC = gcc
-CFLAGS = -Wall -I/opt/homebrew/opt/sdl2/include -I/opt/homebrew/opt/sqlite/include
-LDFLAGS = -L/opt/homebrew/opt/sdl2/lib -lSDL2 -L/opt/homebrew/opt/sqlite/lib -lsqlite3
+CFLAGS = -Wall -I/opt/homebrew/opt/sdl2/include/SDL2 -I/opt/homebrew/opt/sdl2_ttf/include/SDL2 -I/opt/homebrew/opt/sqlite/include
+LDFLAGS = -L/opt/homebrew/opt/sdl2/lib -lSDL2 -L/opt/homebrew/opt/sdl2_ttf/lib -lSDL2_ttf -L/opt/homebrew/opt/sqlite/lib -lsqlite3
 
 # Nombre del ejecutable
 TARGET = game
 
 # Archivos fuente
-SOURCES = main.c database.c
+SOURCES = main.c database.c ui.c
 
 # Regla principal
 all: $(TARGET)

@@ -8,3 +8,18 @@ game
 
 # Base de datos
 tetris.db
+
+
+#workspace
+.claude
+.vscode
+.claude
+.gitignore
+
+# macOS
+.DS_Store
+
+
+
+
+

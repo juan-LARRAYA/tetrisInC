@@ -1,7 +1,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 // ============ CONFIGURACIÓN DEL TABLERO ============
 #define GRID_WIDTH 10   // Columnas del tablero
